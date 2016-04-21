@@ -48,6 +48,9 @@ TRACE_CLIENT_EXPORT void ayxia_tc_trace(
   const ayxia_trace_arg* args,
   size_t nargs);
 
+TRACE_CLIENT_EXPORT void ayxia_tc_trace_varargs(
+  const ayxia_trace_block* block,
+  ...);
 
 #if defined(__cplusplus)
 }
@@ -93,7 +96,7 @@ namespace ayxia
         return res;
       }
 
-      template<typename A1> 
+      template<typename A1>
       void operator()(const A1& a1) const
       {
         ayxia_trace_arg args[] = { mkarg(a1) };
@@ -131,6 +134,15 @@ namespace ayxia
   static ayxia::trace::Trace AYX_TRACE_UNIQ(ayx_trace_,__LINE__)(0, channel, __FILE__, __FUNCTION__, __LINE__, format); \
   AYX_TRACE_UNIQ(ayx_trace_,__LINE__)(__VA_ARGS__);
 
-  
 
+#else
+
+#define AYX_TRACE_UNIQ_(x,l) x ## l
+#define AYX_TRACE_UNIQ(x,l) AYX_TRACE_UNIQ_(x,l)
+
+#define TRACE_INFO(ch, f, ...) \
+  static ayxia_trace_block AYX_TRACE_UNIQ(ayx_trace_,__LINE__) = { \
+    .level = 0, .channel = ch, .file = __FILE__, .func = __FUNCTION__, .lineno = __LINE__, .format = f }; \
+  ayxia_tc_trace_varargs(&AYX_TRACE_UNIQ(ayx_trace_,__LINE__), __VA_ARGS__);
+  
 #endif // __cplusplus
