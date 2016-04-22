@@ -71,7 +71,7 @@ void ayxia::trace::Context::Send(const ayxia_trace_channel* channel, const ayxia
       args_size += it->parg ? strlen((char*)it->parg) + 2 : 0;
       break;
     case att_wstring:
-      args_size += it->parg ? wcslen((wchar_t*)it->parg) + 2 : 0;
+      args_size += it->parg ? wcslen((wchar_t*)it->parg) * sizeof(wchar_t) + 2 : 0;
       break;
     default:
       abort();

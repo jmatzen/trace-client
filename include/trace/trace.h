@@ -121,6 +121,7 @@ namespace ayxia
         return res;
       }
 
+
       template<typename A1>
       void operator()(const A1& a1) const
       {
@@ -134,6 +135,14 @@ namespace ayxia
           mkarg(a1), mkarg(a2)
         };
         ayxia_tc_trace(&_channel, args, 2);
+      }
+
+      template<typename A1, typename A2, typename  A3>
+      void operator()(const A1& a1, const A2& a2, const A3& a3) const {
+        ayxia_trace_arg args[] = {
+          mkarg(a1), mkarg(a2), mkarg(a3)
+        };
+        ayxia_tc_trace(&_channel, args, 3);
       }
 
 
