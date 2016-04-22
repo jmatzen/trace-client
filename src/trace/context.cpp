@@ -3,6 +3,13 @@
 #include <cassert>
 #include <type_traits>
 
+#if defined _DEBUG
+#  include <iostream>
+#  define DEBUG_LOG(s) do { std::cerr << s << std::endl; } while(0);
+#else
+#  define DEBUG_LOG(s)
+#endif
+
 namespace
 {
   const size_t kBufferSize = 65536;
@@ -146,21 +153,13 @@ void ayxia::trace::Context::ThreadEntryPoint()
     m_condvar.notify_all();
   }
 
-  std::vector<char> tmp;
-  tmp.reserve(kBufferSize);
-
-  while (m_thread.joinable())
+  // start libuv timer
+  uv_timer_start(&m_uvTimer, [](uv_timer_t* const timer) 
   {
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    {
-      if (!m_buffer.empty()) {
-        std::unique_lock<std::mutex> lk(m_mutex);
-        std::swap(tmp, m_buffer);
-        m_condvar.notify_all();
-      }
-    }
-    tmp.clear();
-  }
+    ((Context*)timer->data)->OnTimer();
+  }, 0, 100);
+
+  uv_run(m_uvLoop, UV_RUN_DEFAULT);
 }
 
 void ayxia::trace::Context::SendToLogger(const char * p, size_t len)
@@ -174,13 +173,58 @@ void ayxia::trace::Context::SendToLogger(const char * p, size_t len)
   m_buffer.insert(m_buffer.end(), p, p + len);
 }
 
+void ayxia::trace::Context::OnSignal()
+{
+  DEBUG_LOG("OnSignal");
+}
+
+void ayxia::trace::Context::OnTimer()
+{
+  DEBUG_LOG("OnTimer");
+  std::vector<char> tmp;
+  tmp.reserve(kBufferSize);
+
+  while (m_thread.joinable())
+  {
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+    {
+      if (!m_buffer.empty()) {
+        std::unique_lock<std::mutex> lk(m_mutex);
+        std::swap(tmp, m_buffer);
+        m_condvar.notify_all();
+      }
+    }
+    tmp.clear();
+  }
+
+}
+
 ayxia::trace::Context::~Context()
 {
+
   auto thread = std::move(m_thread);
   thread.join();
+
+  if (m_uvLoop)
+    uv_loop_close(m_uvLoop);
 }
 
 ayxia::trace::Context::Context()
+  : m_uvLoop(0)
 {
+  //initialize libuv
+  m_uvLoop = uv_loop_new();
+
+  // initialize async event handler
+  uv_async_init(m_uvLoop, &m_uvSignal, [](uv_async_t* as)
+  {
+    ((Context*)as->data)->OnSignal();
+  });
+  m_uvSignal.data = this;
+
+  uv_timer_init(m_uvLoop, &m_uvTimer);
+  m_uvTimer.data = this;
+
   m_buffer.reserve(kBufferSize);
 }

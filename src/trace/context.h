@@ -5,6 +5,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <vector>
+#include <uv.h>
 
 namespace ayxia
 {
@@ -29,12 +30,19 @@ namespace ayxia
 
       void SendToLogger(const char* p, size_t len);
 
+      void OnSignal();
+
+      void OnTimer();
+
     private:
       std::thread m_thread;
       std::mutex m_mutex;
       std::condition_variable m_condvar;
       std::vector<char> m_buffer;
 
+      uv_loop_t* m_uvLoop;
+      uv_async_t m_uvSignal;
+      uv_timer_t m_uvTimer;
     };
   }
 }
