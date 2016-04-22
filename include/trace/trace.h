@@ -9,48 +9,61 @@
 #endif
 
 #if defined (__cplusplus)
+#include <type_traits>
 extern "C" {
 #endif
 
-TRACE_CLIENT_EXPORT void ayxia_tc_initialize();
-TRACE_CLIENT_EXPORT void ayxia_tc_shutdown();
+  TRACE_CLIENT_EXPORT void ayxia_tc_initialize();
+  TRACE_CLIENT_EXPORT void ayxia_tc_shutdown();
 
-typedef struct ayxia_trace_block_
-{
-  int level;
-  const char* channel;
-  const char* file;
-  const char* func;
-  int lineno;
-  const char* format;
-} ayxia_trace_block;
+  typedef struct ayxia_trace_channel_
+  {
+    uint32_t level : 8;
+    uint32_t lineno : 24;
+    const char* channel;
+    const char* file;
+    const char* func;
+    const char* format;
+  } ayxia_trace_channel;
 
-enum ayxia_trace_type
-{
-  att_int8,
-  att_int16,
-  att_int32,
-  att_int64,
-  att_float32,
-  att_float64,
-  att_string,
-  att_wstring,
-};
+  enum ayxia_trace_type
+  {
+    att_int8,
+    att_uint8,
+    att_int16,
+    att_uint16,
+    att_int32,
+    att_uint32,
+    att_int64,
+    att_uint64,
+    att_float32,
+    att_float64,
+    att_string,
+    att_wstring,
+  };
 
-typedef struct ayxia_trace_arg_
-{
-  const void* parg;
-  enum ayxia_trace_type type;
-} ayxia_trace_arg;
+  enum ayxia_trace_command
+  {
+    atc_init_channel,
+    atc_trace,
+  };
 
-TRACE_CLIENT_EXPORT void ayxia_tc_trace(
-  const ayxia_trace_block* block, 
-  const ayxia_trace_arg* args,
-  size_t nargs);
+  typedef struct ayxia_trace_arg_
+  {
+    const void* parg;
+    enum ayxia_trace_type type;
+  } ayxia_trace_arg;
 
-TRACE_CLIENT_EXPORT void ayxia_tc_trace_varargs(
-  const ayxia_trace_block* block,
-  ...);
+  TRACE_CLIENT_EXPORT void ayxia_tc_trace(
+    const ayxia_trace_channel* channel,
+    const ayxia_trace_arg* args,
+    size_t nargs);
+
+  TRACE_CLIENT_EXPORT void ayxia_tc_trace_varargs(
+    const ayxia_trace_channel* channel,
+    ...);
+
+  TRACE_CLIENT_EXPORT void ayxia_tc_init_channel(const ayxia_trace_channel* channel);
 
 #if defined(__cplusplus)
 }
@@ -67,24 +80,36 @@ namespace ayxia
     public:
       Trace(int level, const char* channel, const char* file, const char * func, int lineno, const char *format)
       {
-        _blk.level = level;
-        _blk.channel = channel;
-        _blk.file = file;
-        _blk.func = func;
-        _blk.lineno = lineno;
-        _blk.format = format;
+        _channel.level = level;
+        _channel.channel = channel;
+        _channel.file = file;
+        _channel.func = func;
+        _channel.lineno = lineno;
+        _channel.format = format;
+        ayxia_tc_init_channel(&_channel);
       }
 
       void operator()() const
       {
-        Send(0, 0);
+        ayxia_tc_trace(&_channel, nullptr, 0);
       }
 
       template<typename t> struct argtype;
 
-      template<>
-      struct argtype<int> {
-        static const ayxia_trace_type value = att_int32;
+      #define AYX_ARGTYPE(type,att)      template<> struct argtype<type> {static const ayxia_trace_type value = att;};
+      AYX_ARGTYPE(int8_t, att_int8);
+      AYX_ARGTYPE(uint8_t, att_int8);
+      AYX_ARGTYPE(int16_t, att_int16);
+      AYX_ARGTYPE(uint16_t, att_uint16);
+      AYX_ARGTYPE(int32_t, att_int32);
+      AYX_ARGTYPE(uint32_t, att_uint32);
+      AYX_ARGTYPE(float, att_float32);
+      AYX_ARGTYPE(double, att_float64);
+      AYX_ARGTYPE(const char*, att_string);
+      AYX_ARGTYPE(const wchar_t*, att_wstring);
+      template<typename T, int N>
+      struct argtype<T[N]> {
+        static const ayxia_trace_type value = argtype<const T*>::value;
       };
 
       template<typename T>
@@ -100,7 +125,7 @@ namespace ayxia
       void operator()(const A1& a1) const
       {
         ayxia_trace_arg args[] = { mkarg(a1) };
-        Send(args, 2);
+        ayxia_tc_trace(&_channel, args, 1);
       }
 
       template<typename A1, typename A2>
@@ -108,13 +133,12 @@ namespace ayxia
         ayxia_trace_arg args[] = {
           mkarg(a1), mkarg(a2)
         };
-        Send(args, 2);
+        ayxia_tc_trace(&_channel, args, 2);
       }
 
-      TRACE_CLIENT_EXPORT void Send(const ayxia_trace_arg* args, size_t nargs) const;
 
     private:
-      ayxia_trace_block _blk;
+      ayxia_trace_channel _channel;
 
       union {
         struct {
@@ -141,8 +165,8 @@ namespace ayxia
 #define AYX_TRACE_UNIQ(x,l) AYX_TRACE_UNIQ_(x,l)
 
 #define TRACE_INFO(ch, f, ...) \
-  static ayxia_trace_block AYX_TRACE_UNIQ(ayx_trace_,__LINE__) = { \
+  static ayxia_trace_channel AYX_TRACE_UNIQ(ayx_trace_,__LINE__) = { \
     .level = 0, .channel = ch, .file = __FILE__, .func = __FUNCTION__, .lineno = __LINE__, .format = f }; \
   ayxia_tc_trace_varargs(&AYX_TRACE_UNIQ(ayx_trace_,__LINE__), __VA_ARGS__);
-  
+
 #endif // __cplusplus

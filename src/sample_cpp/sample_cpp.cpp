@@ -2,7 +2,9 @@
 
 int main()
 {
-  TRACE_INFO("channel", "this is a test %d", 3);
+  ayxia_tc_initialize();
+  TRACE_INFO("channel", "this is a test %d", 3, "test");
+  ayxia_tc_shutdown();
 }
 
 

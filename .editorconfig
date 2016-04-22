@@ -1,0 +1,17 @@
+; Top-most EditorConfig file
+root = true
+
+; 2-column space indentation for sources
+[*.{cpp,h,lua}]
+indent_style = space
+indent_size = 2
+
+; 4-column space for python (standard PEP-8)
+[*.py]
+indent_style = space
+indent_size = 4
+
+[*.make]
+indent_style = tab
+indent_size = 4
+
