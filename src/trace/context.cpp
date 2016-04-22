@@ -34,7 +34,7 @@ namespace
     const uint16_t len = arg ? static_cast<uint16_t>(wcslen(arg)) : 0xffff;
     p = write_buffer(p, len);
     if (arg) memcpy(p, arg, len*sizeof(wchar_t));
-    return p + len;
+    return p + len*sizeof(wchar_t);
   }
 
 
@@ -55,11 +55,20 @@ namespace
     p = write_buffer(p, int8_t(arg.type));
     p = write_buffer(p, (const T*)arg.parg);
   }
+
+  void allocator(uv_handle_t* handle, size_t size, uv_buf_t* buf)
+  {
+    buf->base = new char[size];
+    buf->len = size;
+  }
 }
 
 
-void ayxia::trace::Context::Send(const ayxia_trace_channel* channel, const ayxia_trace_arg* args, size_t nargs)
+void ayxia::trace::Context::SendTrace(const ayxia_trace_channel* channel, const ayxia_trace_arg* args, size_t nargs)
 {
+  if (!m_loggingEnabled)
+    return;
+
   size_t args_size = 0;
 
   for (auto it = args; it != args + nargs; ++it) {
@@ -116,6 +125,9 @@ void ayxia::trace::Context::Send(const ayxia_trace_channel* channel, const ayxia
 
 void ayxia::trace::Context::InitChannel(const ayxia_trace_channel * channel)
 {
+  if (!m_loggingEnabled)
+    return;
+
   const size_t bufsz =
     1
     + sizeof(uint64_t) // channel hash (address)
@@ -148,24 +160,80 @@ void ayxia::trace::Context::Initialize()
 
 void ayxia::trace::Context::ThreadEntryPoint()
 {
-  {
-    std::unique_lock<std::mutex> lk(m_mutex);
-    m_condvar.notify_all();
-  }
 
-  // start libuv timer
-  uv_timer_start(&m_uvTimer, [](uv_timer_t* const timer) 
+
+  // initialize the connection to the server
+  auto stream = new uv_tcp_t();
+  uv_tcp_init(m_uvLoop, stream);
+  stream->data = this;
+
+  auto con = new uv_connect_t();
+  con->data = stream;
+
+  auto sin = sockaddr_in6();
+  sin.sin6_family = AF_INET6;
+  sin.sin6_port = htons(1333);
+  inet_pton(AF_INET6, "::1", &sin.sin6_addr);
+
+  uv_tcp_connect(con, stream, (sockaddr*)&sin, [](uv_connect_t* const con, int status)
   {
-    ((Context*)timer->data)->OnTimer();
-  }, 0, 100);
+    auto stream = (uv_tcp_t*)con->data;
+    auto context = (Context*)stream->data;
+    context->OnConnect(con, status);
+  });
+
 
   uv_run(m_uvLoop, UV_RUN_DEFAULT);
+}
+
+void ayxia::trace::Context::OnConnect(uv_connect_t* con, int status)
+{
+  EnableLogging(status == 0);
+  auto stream = (uv_tcp_t*)con->data;
+  if (status != 0)
+  {
+    delete stream;
+  }
+  else
+  {
+    m_uvStream.reset(stream);
+
+    uv_read_start((uv_stream_t*)stream, allocator, [](uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
+    {
+      ((Context*)stream->data)->OnRead((uv_tcp_t*)stream, nread, buf);
+    });
+  }
+
+
+  delete con;
+
+  std::unique_lock<std::mutex> lk(m_mutex);
+  m_condvar.notify_all();
+}
+
+void ayxia::trace::Context::OnRead(uv_tcp_t * stream, ssize_t nread, const uv_buf_t * buf)
+{
+  assert(stream == m_uvStream.get());
+  if (nread <= 0)
+  {
+    uv_close((uv_handle_t*)stream, [](uv_handle_t* h)
+    {
+      ((Context*)h->data)->OnClose((uv_tcp_t*)h);
+    });
+  }
+}
+
+void ayxia::trace::Context::OnClose(uv_tcp_t* stream)
+{
+  assert(stream == m_uvStream.get());
+  m_uvStream.reset();
 }
 
 void ayxia::trace::Context::SendToLogger(const char * p, size_t len)
 {
   std::unique_lock<std::mutex> lk(m_mutex);
   if (m_buffer.size() + len + sizeof(uint16_t) > kBufferSize) {
+    uv_async_send(&m_uvSignal);
     m_condvar.wait(lk);
   }
   uint16_t len_;
@@ -176,42 +244,101 @@ void ayxia::trace::Context::SendToLogger(const char * p, size_t len)
 void ayxia::trace::Context::OnSignal()
 {
   DEBUG_LOG("OnSignal");
+  Flush();
+
+  // check thread joinable state and stop libuv if
+  // we're tearing down
+  if (!m_thread.joinable())
+  {
+    uv_stop(m_uvLoop);
+  }
+}
+
+void ayxia::trace::Context::Flush()
+{
+  std::vector<char> tmp;
+  tmp.reserve(kBufferSize);
+
+  if (!m_buffer.empty()) 
+  {
+    {
+      std::unique_lock<std::mutex> lk(m_mutex);
+      std::swap(tmp, m_buffer);
+      DEBUG_LOG("Flushed " << tmp.size() << " bytes");
+      m_condvar.notify_all();
+    }
+    uv_buf_t buf;
+    buf.len = tmp.size();
+    buf.base = tmp.data();
+
+    auto write_req = new uv_write_t();
+    write_req->data = buf.base;
+
+    //typedef void (*uv_write_cb)(uv_write_t* req, int status);
+
+    uv_write(write_req, (uv_stream_t*)m_uvStream.get(), &buf, 1, [](uv_write_t* req, int status)
+    {
+      delete[] (char*)req->data;
+      delete req;
+    });
+  }
+  tmp.clear();
+}
+
+void ayxia::trace::Context::EnableLogging(bool enable)
+{
+  m_loggingEnabled = enable;
+
+  if (enable)
+  {
+    // start libuv timer
+    uv_timer_start(&m_uvTimer, [](uv_timer_t* const timer)
+    {
+      ((Context*)timer->data)->OnTimer();
+    }, 0, 100);
+  }
+  else
+  {
+    uv_timer_stop(&m_uvTimer);
+  }
 }
 
 void ayxia::trace::Context::OnTimer()
 {
   DEBUG_LOG("OnTimer");
-  std::vector<char> tmp;
-  tmp.reserve(kBufferSize);
-
-  while (m_thread.joinable())
-  {
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-    {
-      if (!m_buffer.empty()) {
-        std::unique_lock<std::mutex> lk(m_mutex);
-        std::swap(tmp, m_buffer);
-        m_condvar.notify_all();
-      }
-    }
-    tmp.clear();
-  }
-
+  Flush();
 }
 
 ayxia::trace::Context::~Context()
 {
+  // tear down thread and network library
 
-  auto thread = std::move(m_thread);
-  thread.join();
+  assert(m_thread.joinable());
+  assert(m_uvLoop);
+
+  if (m_thread.joinable())
+  {
+    // move the thread object
+    auto thread = std::move(m_thread);
+
+    // signal the network loop
+    uv_async_send(&m_uvSignal);
+
+    // wait for thread to terminate
+    thread.join();
+
+  }
 
   if (m_uvLoop)
+  {
     uv_loop_close(m_uvLoop);
+  }
+
 }
 
 ayxia::trace::Context::Context()
-  : m_uvLoop(0)
+  : m_loggingEnabled(false)
+  , m_uvLoop(0)
 {
   //initialize libuv
   m_uvLoop = uv_loop_new();

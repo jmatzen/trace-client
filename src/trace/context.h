@@ -18,7 +18,7 @@ namespace ayxia
 
       ~Context();
 
-      void Send(const ayxia_trace_channel* channel, const ayxia_trace_arg* args, size_t nargs);
+      void SendTrace(const ayxia_trace_channel* channel, const ayxia_trace_arg* args, size_t nargs);
 
       void InitChannel(const ayxia_trace_channel* channel);
 
@@ -34,15 +34,29 @@ namespace ayxia
 
       void OnTimer();
 
+      void Flush();
+
+      void EnableLogging(bool enable);
+
+      void OnConnect(uv_connect_t* con, int status);
+
+      void OnRead(uv_tcp_t* stream, ssize_t nread, const uv_buf_t* buf);
+
+
+
+      void OnClose(uv_tcp_t* stream);
+
     private:
       std::thread m_thread;
       std::mutex m_mutex;
       std::condition_variable m_condvar;
       std::vector<char> m_buffer;
+      bool m_loggingEnabled;
 
       uv_loop_t* m_uvLoop;
       uv_async_t m_uvSignal;
       uv_timer_t m_uvTimer;
+      std::unique_ptr<uv_tcp_t> m_uvStream;
     };
   }
 }

@@ -20,7 +20,7 @@ TRACE_CLIENT_EXPORT void ayxia_tc_shutdown()
 
 TRACE_CLIENT_EXPORT void ayxia_tc_trace(const ayxia_trace_channel* channel, const ayxia_trace_arg* args, size_t nargs)
 {
-  s_context->Send(channel, args, nargs);
+  s_context->SendTrace(channel, args, nargs);
 }
 
 TRACE_CLIENT_EXPORT void ayxia_tc_trace_varargs(const ayxia_trace_channel* channel, ...)
