@@ -12,6 +12,10 @@ if (APPLE)
   set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -std=c++14)
 endif()
 
+if (WIN32)
+  add_definitions(/MP)
+endif()
+
 add_subdirectory(src/trace)
 add_subdirectory(src/sample_c)
 add_subdirectory(src/sample_cpp)
