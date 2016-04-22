@@ -102,7 +102,7 @@ void ayxia::trace::Context::Send(const ayxia_trace_channel* channel, const ayxia
     default: abort();
     }
   }
-
+  
   assert(ptr == buf + buflen);
   SendToLogger(buf, buflen);
 }
@@ -166,9 +166,11 @@ void ayxia::trace::Context::ThreadEntryPoint()
 void ayxia::trace::Context::SendToLogger(const char * p, size_t len)
 {
   std::unique_lock<std::mutex> lk(m_mutex);
-  if (m_buffer.size() + len > kBufferSize) {
+  if (m_buffer.size() + len + sizeof(uint16_t) > kBufferSize) {
     m_condvar.wait(lk);
   }
+  uint16_t len_;
+  m_buffer.insert(m_buffer.end(), (char*)&len_, (char*)&len_ + sizeof(len_));
   m_buffer.insert(m_buffer.end(), p, p + len);
 }
 
