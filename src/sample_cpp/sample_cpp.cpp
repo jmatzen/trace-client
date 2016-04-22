@@ -1,4 +1,5 @@
 #include <trace/trace.h>
+#include <thread>
 
 #if defined _WIN32
 
@@ -9,12 +10,13 @@ struct InitAllocHook
   InitAllocHook()
   {
     _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_LEAK_CHECK_DF);
-    _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);
-    _CrtSetBreakAlloc(152);
+    _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG| _CRTDBG_MODE_WNDW);
+    //_CrtSetBreakAlloc(152);
   }
 } static const $allocInit;
 
 #endif
+
 
 int main()
 {

@@ -15,12 +15,14 @@ extern "C" {
 #endif
 
   TRACE_CLIENT_EXPORT void ayxia_tc_initialize();
+
   TRACE_CLIENT_EXPORT void ayxia_tc_shutdown();
 
   typedef struct ayxia_trace_channel_
   {
     uint32_t level : 8;
-    uint32_t lineno : 24;
+    uint32_t lineno : 23;
+    uint32_t channel_disable : 1;
     const char* channel;
     const char* file;
     const char* func;
@@ -131,12 +133,14 @@ namespace ayxia
       template<typename A1>
       void operator()(const A1& a1) const
       {
+        if (_channel.channel_disable) return;
         ayxia_trace_arg args[] = { mkarg(a1) };
         ayxia_tc_trace(&_channel, args, 1);
       }
 
       template<typename A1, typename A2>
       void operator()(const A1& a1, const A2& a2) const {
+        if (_channel.channel_disable) return;
         ayxia_trace_arg args[] = {
           mkarg(a1), mkarg(a2)
         };
@@ -145,6 +149,7 @@ namespace ayxia
 
       template<typename A1, typename A2, typename  A3>
       void operator()(const A1& a1, const A2& a2, const A3& a3) const {
+        if (_channel.channel_disable) return;
         ayxia_trace_arg args[] = {
           mkarg(a1), mkarg(a2), mkarg(a3)
         };
@@ -152,31 +157,23 @@ namespace ayxia
       }
 
 
-    private:
       ayxia_trace_channel _channel;
-
-      union {
-        struct {
-          int _global_disable : 1;
-          int _trace_disable : 1;
-        };
-        int _disable;
-      };
     };
   }
 }
 
 
-#define TRACE_INFO(channel, format, ...) \
-  static ayxia::trace::Trace AYX_TRACE_UNIQ(ayx_trace_,__LINE__)(0, channel, __FILE__, __FUNCTION__, __LINE__, format); \
-  AYX_TRACE_UNIQ(ayx_trace_,__LINE__)(__VA_ARGS__);
-
+#define TRACE_INFO(channel, format, ...)  { \
+  static ayxia::trace::Trace AYX_TRACE_UNIQ(ayx_trace_, __LINE__)(0, channel, __FILE__, __FUNCTION__, __LINE__, format); \
+  AYX_TRACE_UNIQ(ayx_trace_, __LINE__)(__VA_ARGS__); }
 
 #else
 
-#define TRACE_INFO(ch, f, ...) \
-  static ayxia_trace_channel AYX_TRACE_UNIQ(ayx_trace_,__LINE__) = { \
-    .level = 0, .channel = ch, .file = __FILE__, .func = __FUNCTION__, .lineno = __LINE__, .format = f }; \
-  ayxia_tc_trace_varargs(&AYX_TRACE_UNIQ(ayx_trace_,__LINE__), __VA_ARGS__);
+#define TRACE_INFO(ch, f, ...)  { \
+    static ayxia_trace_channel AYX_TRACE_UNIQ(ayx_trace_, __LINE__) = { \
+      .level = 0,.channel = ch,.file = __FILE__,.func = __FUNCTION__,.lineno = __LINE__,.format = f }; \
+    if (!AYX_TRACE_UNIQ(ayx_trace_, __LINE__).channel_disable) \
+      ayxia_tc_trace_varargs(&AYX_TRACE_UNIQ(ayx_trace_, __LINE__), __VA_ARGS__); \
+}
 
 #endif // __cplusplus

@@ -14,6 +14,7 @@ endif()
 
 if (WIN32)
   add_definitions(/MP)
+  add_definitions(/D_WIN32_WINNT=0x06010000)
 endif()
 
 add_subdirectory(src/trace)

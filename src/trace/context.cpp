@@ -66,8 +66,11 @@ namespace
 
 void ayxia::trace::Context::SendTrace(const ayxia_trace_channel* channel, const ayxia_trace_arg* args, size_t nargs)
 {
-  if (!m_loggingEnabled)
+  DEBUG_LOG("SendTrace: " << channel->format);
+  if (!m_loggingEnabled) {
+    DEBUG_LOG("SendTrace: logging disabled");
     return;
+  }
 
   size_t args_size = 0;
 
@@ -155,6 +158,7 @@ void ayxia::trace::Context::Initialize()
 {
   std::unique_lock<std::mutex> lk(m_mutex);
   m_thread = std::thread(std::bind(&Context::ThreadEntryPoint, this));
+  DEBUG_LOG("waiting for thread creation to complete.");
   m_condvar.wait(lk);
 }
 
@@ -164,7 +168,7 @@ void ayxia::trace::Context::ThreadEntryPoint()
 
   // initialize the connection to the server
   auto stream = new uv_tcp_t();
-  uv_tcp_init(m_uvLoop, stream);
+  uv_tcp_init(&m_uvLoop, stream);
   stream->data = this;
 
   auto con = new uv_connect_t();
@@ -183,7 +187,9 @@ void ayxia::trace::Context::ThreadEntryPoint()
   });
 
 
-  uv_run(m_uvLoop, UV_RUN_DEFAULT);
+  uv_run(&m_uvLoop, UV_RUN_DEFAULT);
+
+  DEBUG_LOG("exiting network thread");
 }
 
 void ayxia::trace::Context::OnConnect(uv_connect_t* con, int status)
@@ -192,10 +198,12 @@ void ayxia::trace::Context::OnConnect(uv_connect_t* con, int status)
   auto stream = (uv_tcp_t*)con->data;
   if (status != 0)
   {
+    DEBUG_LOG(uv_strerror(status));
     delete stream;
   }
   else
   {
+    DEBUG_LOG("Connected to log viewer.");
     m_uvStream.reset(stream);
 
     uv_read_start((uv_stream_t*)stream, allocator, [](uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
@@ -250,7 +258,8 @@ void ayxia::trace::Context::OnSignal()
   // we're tearing down
   if (!m_thread.joinable())
   {
-    uv_stop(m_uvLoop);
+    DEBUG_LOG("stopping network loop");
+    uv_stop(&m_uvLoop);
   }
 }
 
@@ -311,10 +320,10 @@ void ayxia::trace::Context::OnTimer()
 
 ayxia::trace::Context::~Context()
 {
+  DEBUG_LOG("tearing down connection context");
   // tear down thread and network library
 
   assert(m_thread.joinable());
-  assert(m_uvLoop);
 
   if (m_thread.joinable())
   {
@@ -324,33 +333,30 @@ ayxia::trace::Context::~Context()
     // signal the network loop
     uv_async_send(&m_uvSignal);
 
+    DEBUG_LOG("waiting for thread to terminate");
     // wait for thread to terminate
     thread.join();
 
   }
 
-  if (m_uvLoop)
-  {
-    uv_loop_close(m_uvLoop);
-  }
-
+  uv_loop_close(&m_uvLoop);
 }
 
 ayxia::trace::Context::Context()
   : m_loggingEnabled(false)
-  , m_uvLoop(0)
+  , m_uvLoop()
 {
   //initialize libuv
-  m_uvLoop = uv_loop_new();
+  uv_loop_init(&m_uvLoop);
 
   // initialize async event handler
-  uv_async_init(m_uvLoop, &m_uvSignal, [](uv_async_t* as)
+  uv_async_init(&m_uvLoop, &m_uvSignal, [](uv_async_t* as)
   {
     ((Context*)as->data)->OnSignal();
   });
   m_uvSignal.data = this;
 
-  uv_timer_init(m_uvLoop, &m_uvTimer);
+  uv_timer_init(&m_uvLoop, &m_uvTimer);
   m_uvTimer.data = this;
 
   m_buffer.reserve(kBufferSize);

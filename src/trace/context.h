@@ -53,7 +53,7 @@ namespace ayxia
       std::vector<char> m_buffer;
       bool m_loggingEnabled;
 
-      uv_loop_t* m_uvLoop;
+      uv_loop_t m_uvLoop;
       uv_async_t m_uvSignal;
       uv_timer_t m_uvTimer;
       std::unique_ptr<uv_tcp_t> m_uvStream;
