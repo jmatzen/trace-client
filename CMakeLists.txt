@@ -14,7 +14,9 @@ endif()
 
 if (WIN32)
   add_definitions(/MP)
-  add_definitions(/D_WIN32_WINNT=0x06010000)
+  add_definitions(/D_WIN32_WINNT=0x0600 /DWINVER=0x0600)
+  add_definitions(/D_SCL_SECURE_NO_WARNINGS /DWIN32_LEAN_AND_MEAN /D_CRT_SECURE_NO_WARNINGS)
+
 endif()
 
 add_subdirectory(src/trace)
@@ -22,7 +24,6 @@ add_subdirectory(src/sample_c)
 add_subdirectory(src/sample_cpp)
 
 if (WIN32)
-  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
   string(REPLACE "/W3" "/W0" CMAKE_C_FLAGS ${CMAKE_C_FLAGS})
 endif()
 

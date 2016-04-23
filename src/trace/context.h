@@ -28,7 +28,7 @@ namespace ayxia
 
       void ThreadEntryPoint();
 
-      void SendToLogger(const char* p, size_t len);
+      void SendToLogger(ayxia_trace_command command, const char* p, size_t len);
 
       void OnSignal();
 

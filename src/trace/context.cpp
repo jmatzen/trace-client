@@ -1,6 +1,7 @@
 #include "context.h"
 #include <chrono>
 #include <cassert>
+#include <array>
 #include <type_traits>
 
 #if defined _DEBUG
@@ -72,37 +73,10 @@ void ayxia::trace::Context::SendTrace(const ayxia_trace_channel* channel, const 
     return;
   }
 
-  size_t args_size = 0;
-
-  for (auto it = args; it != args + nargs; ++it) {
-    switch (it->type) {
-    case att_uint8:
-    case att_int8: args_size += 1; break;
-    case att_uint16:
-    case att_int16: args_size += 2; break;
-    case att_uint32:
-    case att_float32:
-    case att_int32: args_size += 4; break;
-    case att_uint64:
-    case att_float64:
-    case att_int64: args_size += 8; break;
-    case att_string:
-      args_size += it->parg ? strlen((char*)it->parg) + 2 : 0;
-      break;
-    case att_wstring:
-      args_size += it->parg ? wcslen((wchar_t*)it->parg) * sizeof(wchar_t) + 2 : 0;
-      break;
-    default:
-      abort();
-    }
-  }
-
-  // TODO: use pool
-  const size_t buflen = 1 + sizeof(uint64_t) + args_size + nargs;
-  auto buf = (char*)alloca(buflen);
-  auto ptr = buf;
-  ptr = write_buffer(ptr, uint8_t(atc_trace));
+  std::array<char, 4096> buf;
+  auto ptr = buf.data();
   ptr = write_buffer(ptr, uint64_t(channel));
+  ptr = write_buffer(ptr, uint8_t(nargs));
 
   for (auto it = args; it != args + nargs; ++it) {
     switch (it->type) {
@@ -122,8 +96,8 @@ void ayxia::trace::Context::SendTrace(const ayxia_trace_channel* channel, const 
     }
   }
   
-  assert(ptr == buf + buflen);
-  SendToLogger(buf, buflen);
+  //assert(ptr == buf + buflen);
+  SendToLogger(atc_trace, buf.data(), ptr-buf.data());
 }
 
 void ayxia::trace::Context::InitChannel(const ayxia_trace_channel * channel)
@@ -131,18 +105,8 @@ void ayxia::trace::Context::InitChannel(const ayxia_trace_channel * channel)
   if (!m_loggingEnabled)
     return;
 
-  const size_t bufsz =
-    1
-    + sizeof(uint64_t) // channel hash (address)
-    + sizeof(uint8_t) // level
-    + sizeof(uint16_t) // lineno
-    + strlen(channel->channel) + 2
-    + strlen(channel->file) + 2
-    + strlen(channel->func) + 2
-    + strlen(channel->format) + 2;
-  auto buf = (char*)alloca(bufsz);
-  auto p = buf;
-  p = write_buffer(p, uint8_t(atc_init_channel));
+  std::array<char, 4096> buf;
+  auto p = buf.data();
   p = write_buffer(p, uint64_t(channel));
   p = write_buffer(p, uint8_t(channel->level));
   p = write_buffer(p, uint16_t(channel->lineno));
@@ -150,8 +114,7 @@ void ayxia::trace::Context::InitChannel(const ayxia_trace_channel * channel)
   p = write_buffer(p, channel->file);
   p = write_buffer(p, channel->func);
   p = write_buffer(p, channel->format);
-  assert(p == buf + bufsz);
-  SendToLogger(buf, bufsz);
+  SendToLogger(atc_init_channel, buf.data(),p-buf.data());
 }
 
 void ayxia::trace::Context::Initialize()
@@ -174,10 +137,17 @@ void ayxia::trace::Context::ThreadEntryPoint()
   auto con = new uv_connect_t();
   con->data = stream;
 
+#if 0
   auto sin = sockaddr_in6();
   sin.sin6_family = AF_INET6;
-  sin.sin6_port = htons(1333);
+  sin.sin6_port = htons(8372);
   inet_pton(AF_INET6, "::1", &sin.sin6_addr);
+#else
+  auto sin = sockaddr_in();
+  sin.sin_family = AF_INET;
+  sin.sin_port = htons(8372);
+  inet_pton(AF_INET, "127.0.0.1", &sin.sin_addr);
+#endif
 
   uv_tcp_connect(con, stream, (sockaddr*)&sin, [](uv_connect_t* const con, int status)
   {
@@ -237,14 +207,16 @@ void ayxia::trace::Context::OnClose(uv_tcp_t* stream)
   m_uvStream.reset();
 }
 
-void ayxia::trace::Context::SendToLogger(const char * p, size_t len)
+void ayxia::trace::Context::SendToLogger(
+  ayxia_trace_command command, const char * p, size_t len)
 {
   std::unique_lock<std::mutex> lk(m_mutex);
   if (m_buffer.size() + len + sizeof(uint16_t) > kBufferSize) {
     uv_async_send(&m_uvSignal);
     m_condvar.wait(lk);
   }
-  uint16_t len_;
+  m_buffer.insert(m_buffer.end(), static_cast<char>(command));
+  uint16_t len_ = static_cast<uint16_t>(len);
   m_buffer.insert(m_buffer.end(), (char*)&len_, (char*)&len_ + sizeof(len_));
   m_buffer.insert(m_buffer.end(), p, p + len);
 }
@@ -268,6 +240,12 @@ void ayxia::trace::Context::Flush()
   std::vector<char> tmp;
   tmp.reserve(kBufferSize);
 
+  struct write_ctx
+    : public uv_write_t
+    , public uv_buf_t 
+  {
+  };
+
   if (!m_buffer.empty()) 
   {
     {
@@ -276,19 +254,25 @@ void ayxia::trace::Context::Flush()
       DEBUG_LOG("Flushed " << tmp.size() << " bytes");
       m_condvar.notify_all();
     }
-    uv_buf_t buf;
-    buf.len = tmp.size();
-    buf.base = tmp.data();
+    auto ctx = new write_ctx();
+    ctx->len = tmp.size();
+    ctx->base = new char[tmp.size()];
+    memcpy(ctx->base, tmp.data(), tmp.size());
 
-    auto write_req = new uv_write_t();
-    write_req->data = buf.base;
 
     //typedef void (*uv_write_cb)(uv_write_t* req, int status);
 
-    uv_write(write_req, (uv_stream_t*)m_uvStream.get(), &buf, 1, [](uv_write_t* req, int status)
+    auto buf = static_cast<uv_buf_t*>(ctx);
+
+    uv_write(ctx,
+      (uv_stream_t*)m_uvStream.get(), 
+      static_cast<uv_buf_t*>(ctx), 
+      1,
+      [](uv_write_t* req, int status)
     {
-      delete[] (char*)req->data;
-      delete req;
+      auto ctx = static_cast<write_ctx*>(req);
+      delete[] (char*)ctx->base;
+      delete ctx;
     });
   }
   tmp.clear();
