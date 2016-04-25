@@ -18,49 +18,87 @@ struct FormatArgTraits
 {
 };
 
-constexpr ayxia_trace_type FormatArgType(int8_t)
-{
-  return att_int8;
-}
+template<typename T> struct FormatArgType;
+
+template<> struct FormatArgType<int8_t> {
+  static const ayxia_trace_type value = att_int8;
+};
+
+template<> struct FormatArgType<char> {
+  static const ayxia_trace_type value = att_int8;
+};
+
+
+template<> struct FormatArgType<uint8_t> {
+  static const ayxia_trace_type value = att_uint8;
+};
+
+template<> struct FormatArgType<int32_t> {
+  static const ayxia_trace_type value = att_int32;
+};
+
+
+template<> struct FormatArgType<const char*> {
+  static const ayxia_trace_type value = att_string;
+};
+
+template<int N> struct FormatArgType<char[N]> {
+  static const ayxia_trace_type value = att_string;
+};
+
+
 
 template<typename T>
 class FormatArgImpl
-: public FormatArg
+  : public FormatArg
 {
 public:
   FormatArgImpl(const T& val)
-  : FormatArg(FormatArgType(val))
-  {
-    
+    : FormatArg(FormatArgType<T>::value)
+    , m_val(val)  {  }
+
+  auto get() const {
+    return ayxia_trace_arg {
+      &m_val,
+      type
+    };
   }
+
+private:
+  const T& m_val;
 };
 
-#if 0
-template<typename T> struct FormatArgImpl
+template<typename T>
+class FormatArgImpl<T*>
   : public FormatArg
-  , public FormatArgTraits<T>
 {
-  T pval;
-  FormatArgImpl(ayxia_trace_type type_, const uint8_t* p)
-    : FormatArg(type_)
-  {
-    memcpy(&pval, p, sizeof(T));
+public:
+  FormatArgImpl(T* val)
+    : FormatArg(FormatArgType<T*>::value)
+    , m_val(val)
+    , m_len(length(val)) {}
+  static size_t length(const T* p);
+
+  auto get() const {
+    return ayxia_trace_arg{
+      m_val, type
+    };
   }
+private:
+  const T* m_val;
+  size_t m_len;
 };
 
-template<typename T> struct FormatArgImpl<T*>
-  : public FormatArg
-  , public FormatArgTraits<T*>
+template<>
+size_t FormatArgImpl<const char*>::length(const char* p)
 {
-  const T* pval;
-  size_t len;
+  return strlen(p);
+}
 
-  FormatArgImpl(ayxia_trace_type type_, const uint8_t* p, size_t len_)
-    : FormatArg(type_)
-    , len(len_)
-  {
-    pval = reinterpret_cast<const T*>(p);
-  }
+template<>
+size_t FormatArgImpl<const wchar_t*>::length(const wchar_t* p)
+{
+  return wcslen(p);
+}
 
-};
-#endif
+std::string format_string(const char* format, const FormatArg* args, size_t argn);
