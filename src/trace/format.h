@@ -18,7 +18,24 @@ struct FormatArgTraits
 {
 };
 
+constexpr ayxia_trace_type FormatArgType(int8_t)
+{
+  return att_int8;
+}
 
+template<typename T>
+class FormatArgImpl
+: public FormatArg
+{
+public:
+  FormatArgImpl(const T& val)
+  : FormatArg(FormatArgType(val))
+  {
+    
+  }
+};
+
+#if 0
 template<typename T> struct FormatArgImpl
   : public FormatArg
   , public FormatArgTraits<T>
@@ -46,4 +63,4 @@ template<typename T> struct FormatArgImpl<T*>
   }
 
 };
-
+#endif

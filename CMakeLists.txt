@@ -30,6 +30,7 @@ if (WIN32)
   string(REPLACE "/W3" "/W0" CMAKE_C_FLAGS ${CMAKE_C_FLAGS})
 endif()
 
+if (WIN32)
 ## libuv
 file(GLOB libuvfiles
     ${CMAKE_SOURCE_DIR}/submodules/libuv/src/*.c
@@ -37,5 +38,39 @@ file(GLOB libuvfiles
     ${CMAKE_SOURCE_DIR}/submodules/libuv/src/win/*.c
     ${CMAKE_SOURCE_DIR}/submodules/libuv/src/win/*.h
 )
-
+elseif(APPLE)
+  file(GLOB libuvfiles
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/*.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/*.h
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/darwin.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/fsevents.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/darwin-proctitle.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/proctitle.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/async.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/atomic-ops.h
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/core.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/dl.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/fs.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/getaddrinfo.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/getnameinfo.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/internal.h
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/loop.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/loop-watcher.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/pipe.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/poll.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/process.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/signal.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/spinlock.h
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/stream.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/tcp.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/thread.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/timer.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/tty.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/udp.c
+    ${CMAKE_SOURCE_DIR}/submodules/libuv/src/unix/kqueue.c
+   
+  )
+  include_directories(${CMAKE_SOURCE_DIR}/submodules/libuv/src)
+  add_definitions(-D_DARWIN_USE_64_BIT_INODE=1 -D_DARWIN_UNLIMITED_SELECT=1)
+endif()
 add_library(libuv STATIC ${libuvfiles})
