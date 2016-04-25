@@ -2,8 +2,9 @@
 #include <trace/format.h>
 #include <array>
 #include <memory>
+#include <string>
 #include <algorithm>
-
+#include <iostream>
 
 
 template<typename T> void make_format_args(T) {}
@@ -17,23 +18,35 @@ void make_format_args(T it, const Arg& arg, const Args& ...args)
 }
 
 template<typename ...Args>
-auto format(const char* format, const Args& ...args)
+std::string format(const char* format, const Args& ...args)
 {
   std::array<ayxia_trace_arg, sizeof...(Args)> argsarr;
   make_format_args(argsarr.begin(), args...);
   std::array<char, 1024> buf;
-  return ayxia_tc_format(
+  ayxia_tc_format(
     buf.data(), 
-    buf.size(), 
+    buf.size()-1, 
     format, 
     argsarr.data(), 
     argsarr.size());
+  return buf.data();
 }
 
 TEST(Test1)
 {
-  const char* p = "tmp";
-  format("%d %d", (uint8_t)4, 32, "this is a tesT", (char)3, p);
+  CHECK(format("%d", int8_t(0xff)) == "-1");
+  CHECK(format("%d", int16_t(0xffff)) == "-1");
+  CHECK(format("%d", int32_t(0xffffffff)) == "-1");
+  CHECK(format("%d", int64_t(0xffffffffffffffffULL)) == "-1");
+}
+
+TEST(Test2)
+{
+  CHECK(format("%u", uint8_t(~0U)) == "255");
+  CHECK(format("%u", uint16_t(~0U)) == "65535");
+  CHECK(format("%u", uint32_t(~0U)) == std::to_string(~0U));
+  std::cout << std::to_string(~0ULL) << " " << format("%u", uint64_t(~0ULL)) << std::endl;
+  CHECK(format("%u", uint64_t(~0ULL)) == std::to_string(~0ULL));
 }
 
 int main()

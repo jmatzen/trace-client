@@ -33,8 +33,38 @@ template<> struct FormatArgType<uint8_t> {
   static const ayxia_trace_type value = att_uint8;
 };
 
+template<> struct FormatArgType<int16_t> {
+  static const ayxia_trace_type value = att_int16;
+};
+
+
+template<> struct FormatArgType<uint16_t> {
+  static const ayxia_trace_type value = att_uint16;
+};
+
+
 template<> struct FormatArgType<int32_t> {
   static const ayxia_trace_type value = att_int32;
+};
+
+template<> struct FormatArgType<uint32_t> {
+  static const ayxia_trace_type value = att_uint32;
+};
+
+template<> struct FormatArgType<int64_t> {
+  static const ayxia_trace_type value = att_int64;
+};
+
+template<> struct FormatArgType<uint64_t> {
+  static const ayxia_trace_type value = att_uint64;
+};
+
+template<> struct FormatArgType<float> {
+  static const ayxia_trace_type value = att_float32;
+};
+
+template<> struct FormatArgType<double> {
+  static const ayxia_trace_type value = att_float64;
 };
 
 
