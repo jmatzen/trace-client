@@ -60,7 +60,7 @@ namespace
   void allocator(uv_handle_t* handle, size_t size, uv_buf_t* buf)
   {
     buf->base = new char[size];
-    buf->len = size;
+    buf->len = ULONG(size);
   }
 }
 
@@ -76,6 +76,11 @@ void ayxia::trace::Context::SendTrace(const ayxia_trace_channel* channel, const 
   std::array<char, 4096> buf;
   auto ptr = buf.data();
   ptr = write_buffer(ptr, uint64_t(channel));
+  FILETIME ft;
+  GetSystemTimeAsFileTime(&ft);
+  uint64_t timestamp = uint64_t(ft.dwHighDateTime) << 32 | ft.dwLowDateTime;
+  timestamp -= m_timestampBaseTime;
+  ptr = write_buffer(ptr, timestamp);
   ptr = write_buffer(ptr, uint8_t(nargs));
 
   for (auto it = args; it != args + nargs; ++it) {
@@ -255,7 +260,7 @@ void ayxia::trace::Context::Flush()
       m_condvar.notify_all();
     }
     auto ctx = new write_ctx();
-    ctx->len = tmp.size();
+    ctx->len = ULONG(tmp.size());
     ctx->base = new char[tmp.size()];
     memcpy(ctx->base, tmp.data(), tmp.size());
 
@@ -344,4 +349,8 @@ ayxia::trace::Context::Context()
   m_uvTimer.data = this;
 
   m_buffer.reserve(kBufferSize);
+
+  FILETIME ft;
+  GetSystemTimeAsFileTime(&ft);
+  m_timestampBaseTime = uint64_t(ft.dwHighDateTime) << 32 | ft.dwLowDateTime;
 }

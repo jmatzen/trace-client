@@ -1,3 +1,6 @@
 [submodule "submodules/libuv"]
 	path = submodules/libuv
 	url = https://github.com/jmatzen/libuv.git
+[submodule "submodules/unittest-cpp"]
+	path = submodules/unittest-cpp
+	url = https://github.com/jmatzen/unittest-cpp.git

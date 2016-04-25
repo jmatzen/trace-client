@@ -57,6 +57,7 @@ namespace ayxia
       uv_async_t m_uvSignal;
       uv_timer_t m_uvTimer;
       std::unique_ptr<uv_tcp_t> m_uvStream;
+      uint64_t m_timestampBaseTime;
     };
   }
 }

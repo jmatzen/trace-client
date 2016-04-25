@@ -7,6 +7,7 @@ SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 
 include_directories (${CMAKE_SOURCE_DIR}/include)
 include_directories (${CMAKE_SOURCE_DIR}/submodules/libuv/include)
+include_directories (${CMAKE_SOURCE_DIR}/submodules/unittest-cpp)
 
 if (APPLE)
   set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -std=c++14)
@@ -22,6 +23,8 @@ endif()
 add_subdirectory(src/trace)
 add_subdirectory(src/sample_c)
 add_subdirectory(src/sample_cpp)
+add_subdirectory(src/tests)
+add_subdirectory(submodules/unittest-cpp)
 
 if (WIN32)
   string(REPLACE "/W3" "/W0" CMAKE_C_FLAGS ${CMAKE_C_FLAGS})
