@@ -27,35 +27,43 @@ std::string format(const char* format, const Args& ...args)
   return buf.data();
 }
 
-TEST(Test1)
+TEST(TestInt)
 {
-  CHECK(format("test %d test", int8_t(0xff)) == "test -1 test");
-  CHECK(format("%d", int16_t(0xffff)) == "-1");
-  CHECK(format("%d", int32_t(0xffffffff)) == "-1");
-  CHECK(format("%lld", int64_t(0xfeadbeefdeadbeefLL)) == "-95210079662522641");
+  CHECK_EQUAL(format("{0}", int16_t(0xffff)), "-1");
+  CHECK_EQUAL(format("{0}", int32_t(0xffffffff)), "-1");
+  CHECK_EQUAL(format("{0}", int64_t(0xfeadbeefdeadbeefLL)), "-95210079662522641");
 }
 
-TEST(Test2)
+TEST(TestUInt)
 {
-  CHECK(format("%u", uint8_t(~0U)) == "255");
-  CHECK(format("%u", uint16_t(~0U)) == "65535");
-  CHECK(format("%u", uint32_t(~0U)) == std::to_string(~0U));
-  CHECK(format("%llu", uint64_t(~0ULL)) == std::to_string(~0ULL));
+  CHECK_EQUAL(format("{0}", uint16_t(~0U)), "65535");
+  CHECK_EQUAL(format("{0}", uint32_t(~0U)), std::to_string(~0U));
+  CHECK_EQUAL(format("{0}", uint64_t(~0ULL)), std::to_string(~0ULL));
 }
 
 TEST(TestString)
 {
-  CHECK(format("this is %s a test", "not") == "this is not a test");
+  CHECK_EQUAL(format("this is {0} a test", "not"), "this is not a test");
 }
 
 TEST(TestDouble)
 {
-  CHECK(format("%f", 3.14) == "3.140000");
+  CHECK_EQUAL(format("{0}", 3.14), "3.14");
 }
 
 TEST(TestFloat)
 {
-  CHECK(format("%f", 3.14159f) == "3.141590");
+  CHECK_EQUAL(format("{0}", 3.14159f), "3.14159");
+}
+
+TEST(TestHex)
+{
+  CHECK_EQUAL("0xffff", format("0x{0:x}", int16_t(0xffff)));
+  CHECK_EQUAL(format("0x{0:x}", int32_t(0xffffffff)), "0xffffffff");
+  CHECK_EQUAL(format("0x{0:x}", int64_t(0xfeadbeefdeadbeefLL)), "0xfeadbeefdeadbeef");
+  CHECK_EQUAL(format("0x{0:x}", 3.14159), "0x3.14159");
+  CHECK_EQUAL(format("0x{0:x}", 3.14159f), "0x3.14159");
+  CHECK_EQUAL(format("0x{0:x}", "hello"), "0xhello");
 }
 
 TEST(TestException)
