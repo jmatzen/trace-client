@@ -2,64 +2,44 @@
 #include <string>
 #include <array>
 #include <cstdarg>
+#include <cstdlib>
+#include <cstring>
+#include <cstdio>
 
-#if 0
 template<typename T>
-inline void format_arg_push(va_list& lst, const ayxia_trace_arg& arg)
+inline void format_arg_push(intptr_t*& lst, const ayxia_trace_arg& arg)
 {
   T val;
   memcpy(&val, arg.parg, sizeof(T));
-  (intptr_t&)va_arg(lst, T) = val;
+  (*lst++) = val;
+  
 }
 
 template<>
-inline void format_arg_push<int64_t>(va_list& lst, const ayxia_trace_arg& arg)
+inline void format_arg_push<int64_t>(intptr_t*& lst, const ayxia_trace_arg& arg)
 {
   int64_t val;
   memcpy(&val, arg.parg, sizeof(int64_t));
-  va_arg(lst, int64_t) = val;
+  (*lst+=2) = val;
 }
 
 template<typename T>
-inline void format_arg_push_str(va_list& lst, const ayxia_trace_arg& arg)
+inline void format_arg_push_str(intptr_t*& lst, const ayxia_trace_arg& arg)
 {
   const T*  val = (T*)arg.parg;
-  va_arg(lst, const T* ) = val;
+  (*lst++) = reinterpret_cast<intptr_t>(val);
 }
 
 
 template<>
-inline void format_arg_push<float>(va_list& lst, const ayxia_trace_arg& arg)
+inline void format_arg_push<float>(intptr_t*& lst, const ayxia_trace_arg& arg)
 {
   float val;
   memcpy(&val, arg.parg, sizeof(float));
-  va_arg(lst, double) = static_cast<double>(val);
-}
-#endif
-
-template<typename T, int N>
-inline void format_arg_push(va_list& lst, const ayxia_trace_arg& arg)
-{
+  (double&)(*lst+=2) = val;
 }
 
-template<typename T>
-inline void format_arg_push<T, 8>(va_list& lst, const ayxia_trace_arg& arg)
-{
-
-}
-
-template<typename T>
-inline void format_arg_push(va_list& lst, const ayxia_trace_arg& arg)
-{
-  format_arg_push<T, sizeof(T)>(lst, arg);
-}
-
-template<typename T>
-inline void format_arg_push_str(va_list& lst, const ayxia_trace_arg& arg)
-{
-}
-
-inline void format_arg_push(va_list& lst, const ayxia_trace_arg& arg)
+inline void format_arg_push(intptr_t*& lst, const ayxia_trace_arg& arg)
 {
   switch (arg.type) 
   {
@@ -104,6 +84,15 @@ inline void format_arg_push(va_list& lst, const ayxia_trace_arg& arg)
   }
 }
 
+void thunk(char* s, size_t slen, const char* format, ...)
+{
+  va_list lst;
+  va_start(lst, format);
+  intptr_t q = va_arg(lst, intptr_t);
+  std::vsnprintf(s, slen, format, lst);
+  q = 0;
+}
+
 extern"C" void ayxia_tc_format(
   char* s,
   size_t slen,
@@ -113,8 +102,8 @@ extern"C" void ayxia_tc_format(
 {
   const char* format = format_;
 
-  auto const valist = reinterpret_cast<char*>(alloca(nargs * sizeof(uint64_t)));
-  memset(valist, 0, nargs * sizeof(uint64_t));
+  auto const valist = reinterpret_cast<intptr_t*>(alloca(nargs * 2 * sizeof(intptr_t)));
+  std::memset(valist, 0, nargs * 2 * sizeof(intptr_t));
   auto vaitem = valist;
 
   enum State
@@ -150,10 +139,13 @@ extern"C" void ayxia_tc_format(
       }
       ch = *format++;
       break;
+      case s_done:
+        break;
     }
   }
 
-  vsnprintf(s, slen, format_, valist);
+  thunk(s, slen, format_, &valist);
+  
 }
 
 
