@@ -7,90 +7,51 @@
 #include <cstdio>
 
 template<typename T>
-inline void format_arg_push(intptr_t*& lst, const ayxia_trace_arg& arg)
+int format_arg(char* s, size_t slen, const std::string& fmt, const void* p)
 {
   T val;
-  memcpy(&val, arg.parg, sizeof(T));
-  (*lst++) = val;
-  
-}
-
-template<>
-inline void format_arg_push<int64_t>(intptr_t*& lst, const ayxia_trace_arg& arg)
-{
-  int64_t val;
-  memcpy(&val, arg.parg, sizeof(int64_t));
-  (*lst+=2) = val;
-}
-
-template<typename T>
-inline void format_arg_push_str(intptr_t*& lst, const ayxia_trace_arg& arg)
-{
-  const T*  val = (T*)arg.parg;
-  (*lst++) = reinterpret_cast<intptr_t>(val);
-}
-
-
-template<>
-inline void format_arg_push<float>(intptr_t*& lst, const ayxia_trace_arg& arg)
-{
-  float val;
-  memcpy(&val, arg.parg, sizeof(float));
-  (double&)(*lst+=2) = val;
-}
-
-inline void format_arg_push(intptr_t*& lst, const ayxia_trace_arg& arg)
-{
-  switch (arg.type) 
+  memcpy(&val, p, sizeof(T));
+  try
   {
-  case att_uint8:
-    format_arg_push<uint8_t>(lst, arg);
-    break;
-  case att_int8:
-    format_arg_push<int8_t>(lst, arg);
-    break;
-  case att_uint16:
-    format_arg_push<uint16_t>(lst, arg);
-    break;
-  case att_int16:
-    format_arg_push<int16_t>(lst, arg);
-    break;
-  case att_uint32:
-    format_arg_push<uint32_t>(lst, arg);
-    break;
-  case att_int32:
-    format_arg_push<int32_t>(lst, arg);
-    break;
-  case att_uint64:
-    format_arg_push<uint64_t>(lst, arg);
-    break;
-  case att_int64:
-    format_arg_push<int64_t>(lst, arg);
-    break;
-  case att_float32:
-    format_arg_push<float>(lst, arg);
-    break;
-  case att_float64:
-    format_arg_push<double>(lst, arg);
-    break;
-  case att_string:
-    format_arg_push_str<char>(lst, arg);
-    break;
-  case att_wstring:
-    format_arg_push_str<wchar_t>(lst, arg);
-    break;
-  default:
-    break;
+    return snprintf(s, slen, fmt.c_str(), val);
+  }
+  catch (...)
+  {
+    return -1;
   }
 }
 
-void thunk(char* s, size_t slen, const char* format, ...)
+inline int format_arg(char* s, size_t slen, const std::string& fmt, ayxia_trace_arg const& arg)
 {
-  va_list lst;
-  va_start(lst, format);
-  intptr_t q = va_arg(lst, intptr_t);
-  std::vsnprintf(s, slen, format, lst);
-  q = 0;
+  switch (arg.type) {
+  case att_int8:
+    return format_arg<int8_t>(s, slen, fmt, arg.parg); break;
+  case att_uint8:
+    return format_arg<uint8_t>(s, slen, fmt, arg.parg); break;
+  case att_int16:
+    return format_arg<int16_t>(s, slen, fmt, arg.parg); break;
+  case att_uint16:
+    return format_arg<uint16_t>(s, slen, fmt, arg.parg); break;
+  case att_int32:
+    return format_arg<int32_t>(s, slen, fmt, arg.parg); break;
+  case att_uint32:
+    return format_arg<uint32_t>(s, slen, fmt, arg.parg); break;
+  case att_int64:
+    return format_arg<int64_t>(s, slen, fmt, arg.parg); break;
+  case att_uint64:
+    return format_arg<uint64_t>(s, slen, fmt, arg.parg); break;
+  case att_float32:
+    return format_arg<float>(s, slen, fmt, arg.parg); break;
+  case att_float64:
+    return format_arg<double>(s, slen, fmt, arg.parg); break;
+  case att_string:
+    return format_arg<const char*>(s, slen, fmt, &arg.parg); break;
+  case att_wstring:
+    return format_arg<const wchar_t*>(s, slen, fmt, &arg.parg); break;
+  default:
+    break;
+  }
+  return -1;
 }
 
 extern"C" void ayxia_tc_format(
@@ -101,10 +62,8 @@ extern"C" void ayxia_tc_format(
   size_t nargs)
 {
   const char* format = format_;
-
-  auto const valist = reinterpret_cast<intptr_t*>(alloca(nargs * 2 * sizeof(intptr_t)));
-  std::memset(valist, 0, nargs * 2 * sizeof(intptr_t));
-  auto vaitem = valist;
+  const char * const end = s + slen;
+  char* ptr = s;
 
   enum State
   {
@@ -117,10 +76,11 @@ extern"C" void ayxia_tc_format(
 
   State state = s_default;
   char ch = *format++;
-  while (state != s_done)
+  while (state != s_done && ptr < end)
   {
     if (ch == '\0')
       state = s_done;
+
     switch (state)
     {
     case s_default:
@@ -128,12 +88,18 @@ extern"C" void ayxia_tc_format(
         spec.push_back(ch);
         state = s_formatspec;
       }
+      else {
+        *ptr++ = ch;
+      }
       ch = *format++;
       break;
     case s_formatspec:
       spec.push_back(ch);
-      if (isalpha(ch)) {
-        format_arg_push(vaitem, *args++);
+      if (strchr("diuoxXfFeEgGaAcspn", ch)) {
+        int bc = format_arg(ptr, end - ptr, spec, *args++);
+        if (bc == -1)
+          return;
+        ptr += bc;
         state = s_default;
         spec.clear();
       }
@@ -143,9 +109,7 @@ extern"C" void ayxia_tc_format(
         break;
     }
   }
-
-  thunk(s, slen, format_, &valist);
-  
+  *ptr = '\0';
 }
 
 
