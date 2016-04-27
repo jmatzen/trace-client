@@ -9,8 +9,11 @@
 #  define TRACE_CLIENT_EXPORT
 #endif
 
+
+#define AYX_TRACE_UNIQ_(x,l) x ## l
+#define AYX_TRACE_UNIQ(x,l) AYX_TRACE_UNIQ_(x,l)
+
 #if defined (__cplusplus)
-#include <type_traits>
 extern "C" {
 #endif
 
@@ -59,7 +62,7 @@ extern "C" {
   } ayxia_trace_arg;
 
   TRACE_CLIENT_EXPORT void ayxia_tc_trace(
-    const ayxia_trace_channel* channel,
+    ayxia_trace_channel* channel,
     const ayxia_trace_arg* args,
     size_t nargs);
 
@@ -74,13 +77,6 @@ extern "C" {
 
 #if defined(__cplusplus)
 }
-#endif
-
-#define AYX_TRACE_UNIQ_(x,l) x ## l
-#define AYX_TRACE_UNIQ(x,l) AYX_TRACE_UNIQ_(x,l)
-
-
-#if defined(__cplusplus)
 
 namespace ayxia
 {
@@ -118,10 +114,6 @@ namespace ayxia
         ayxia_tc_init_channel(&_channel);
       }
 
-      void operator()() const
-      {
-        ayxia_tc_trace(&_channel, nullptr, 0);
-      }
 
 
       template<typename T>
@@ -133,9 +125,24 @@ namespace ayxia
         return res;
       }
 
+      void operator()() 
+      {
+        if (_channel.channel_disable) return;
+        ayxia_tc_trace(&_channel, nullptr, 0);
+      }
 
+#if __cplusplus >= 201402L || _MSC_VER >= 1900
+
+      template<typename... Args>
+      void operator()(const Args& ...args_)
+      {
+        if (_channel.channel_disable) return;
+        const ayxia_trace_arg args[] = { mkarg(args_)... };
+        ayxia_tc_trace(&_channel, args, sizeof...(args_));
+      }
+#else
       template<typename A1>
-      void operator()(const A1& a1) const
+      void operator()(const A1& a1) 
       {
         if (_channel.channel_disable) return;
         ayxia_trace_arg args[] = { mkarg(a1) };
@@ -143,7 +150,7 @@ namespace ayxia
       }
 
       template<typename A1, typename A2>
-      void operator()(const A1& a1, const A2& a2) const {
+      void operator()(const A1& a1, const A2& a2)  {
         if (_channel.channel_disable) return;
         ayxia_trace_arg args[] = {
           mkarg(a1), mkarg(a2)
@@ -152,7 +159,7 @@ namespace ayxia
       }
 
       template<typename A1, typename A2, typename  A3>
-      void operator()(const A1& a1, const A2& a2, const A3& a3) const {
+      void operator()(const A1& a1, const A2& a2, const A3& a3)  {
         if (_channel.channel_disable) return;
         ayxia_trace_arg args[] = {
           mkarg(a1), mkarg(a2), mkarg(a3)
@@ -160,6 +167,7 @@ namespace ayxia
         ayxia_tc_trace(&_channel, args, 3);
       }
 
+#endif
 
       ayxia_trace_channel _channel;
     };

@@ -1,8 +1,6 @@
 #include <trace/trace.h>
 #include <string>
 #include <array>
-#include <cstdarg>
-#include <cstdlib>
 #include <sstream>
 #include <cctype>
 #include <iomanip>
@@ -29,6 +27,8 @@ FormatSpec parse_format_specifier(const std::string& fmt)
   bool neg = false;
 
   for (auto ch : fmt) {
+    if (ch == '}')
+      break;
     switch (state) {
     case s_begin:
       if (ch == '{') {
@@ -52,32 +52,65 @@ FormatSpec parse_format_specifier(const std::string& fmt)
       else if (isdigit(ch)) {
         fs.align = fs.align * 10 + (ch - '0');
       } else {
-        if (neg) fs.align *= -1;
         if (ch == ':') {
           state = s_fmt;
         } else {
           return FormatSpec();
         }
       }
+      break;
     case s_fmt:
       if (isalpha(ch)) {
         fs.format.push_back(ch);
-      } else if (isdigit(ch)) {
+      }
+      else if (isdigit(ch)) {
         fs.prec = (ch - '0');
         state = s_prec;
       } else {
         return FormatSpec();
       }
+      break;
     case s_prec:
       if (isdigit(ch)) {
         fs.prec = fs.prec * 10 + (ch - '0');
       } else {
         return FormatSpec();
       }
+      break;
     }
   }
+  if (neg) fs.align *= -1;
   return fs;
 }
+
+inline void format_arg(std::ostream& s, const char* value)
+{
+  uint16_t len;
+  memcpy(&len, value, sizeof(uint16_t));
+  s << std::string(value + sizeof(uint16_t), len);
+}
+
+inline void format_arg(std::ostream& s, const wchar_t* value)
+{
+  uint16_t len;
+  memcpy(&len, value, sizeof(uint16_t)); ++value;
+  auto p((char*)alloca(len * 3));
+  auto q = p;
+  for (int i = 0; i != len; ++i) {
+    int ofs = wctomb(q, *value++);
+    if (ofs == -1)
+      break;
+    q += ofs;
+  }
+  s << std::string(p,q);
+}
+
+template<typename T>
+inline void format_arg(std::ostream& s, const T& value)
+{
+  s << value;
+}
+
 
 template<typename T>
 inline void format_arg(std::ostream& s, const std::string& fmt, const void* p)
@@ -86,19 +119,21 @@ inline void format_arg(std::ostream& s, const std::string& fmt, const void* p)
 
   s << std::setprecision(fs.prec);
 
-  s << std::dec;
+  if (fs.align >= 0) 
+    s << std::setw(fs.align) << std::right;
+  else 
+    s << std::setw(-fs.align) << std::left;
 
-  if (!fs.format.empty()) {
-    if (fs.format == "x" || fs.format == "X") {
-      s << std::hex;
-    }
-  }
+  if (fs.format == "x" || fs.format == "X") 
+    s << std::hex;
+  else
+    s << std::dec;
 
   T value;
   memcpy(&value, p, sizeof(T));
   try
   {
-    s << value;
+    format_arg(s, value);
   }
   catch (...)
   {
@@ -106,7 +141,11 @@ inline void format_arg(std::ostream& s, const std::string& fmt, const void* p)
   }
 }
 
-inline void format_arg(std::ostream& s, const std::string& fmt, const ayxia_trace_arg*  args, size_t nargs)
+inline void format_arg(
+  std::ostream& s, 
+  const std::string& fmt, 
+  const ayxia_trace_arg*  args,
+  size_t nargs)
 {
   size_t index = atoi(fmt.c_str() + 1);
   if (index >= nargs)

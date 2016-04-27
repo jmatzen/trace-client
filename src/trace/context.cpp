@@ -65,17 +65,16 @@ namespace
 }
 
 
-void ayxia::trace::Context::SendTrace(const ayxia_trace_channel* channel, const ayxia_trace_arg* args, size_t nargs)
+void ayxia::trace::Context::SendTrace(ayxia_trace_channel& channel, const ayxia_trace_arg* args, size_t nargs)
 {
-  DEBUG_LOG("SendTrace: " << channel->format);
   if (!m_loggingEnabled) {
-    DEBUG_LOG("SendTrace: logging disabled");
+    channel.channel_disable = 1;
     return;
   }
 
   std::array<char, 4096> buf;
   auto ptr = buf.data();
-  ptr = write_buffer(ptr, uint64_t(channel));
+  ptr = write_buffer(ptr, uint64_t(std::addressof(channel)));
 #if defined _WIN32
   FILETIME ft;
   GetSystemTimeAsFileTime(&ft);
@@ -106,7 +105,6 @@ void ayxia::trace::Context::SendTrace(const ayxia_trace_channel* channel, const 
     }
   }
   
-  //assert(ptr == buf + buflen);
   SendToLogger(atc_trace, buf.data(), ptr-buf.data());
 }
 

@@ -77,6 +77,14 @@ template<int N> struct FormatArgType<char[N]> {
 };
 
 
+template<int N> struct FormatArgType<wchar_t[N]> {
+  static const ayxia_trace_type value = att_wstring;
+};
+
+template<> struct FormatArgType<const wchar_t*> {
+  static const ayxia_trace_type value = att_wstring;
+};
+
 
 template<typename T>
 class FormatArgImpl
@@ -131,4 +139,3 @@ size_t FormatArgImpl<const wchar_t*>::length(const wchar_t* p)
   return wcslen(p);
 }
 
-std::string format_string(const char* format, const FormatArg* args, size_t argn);

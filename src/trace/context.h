@@ -18,7 +18,7 @@ namespace ayxia
 
       ~Context();
 
-      void SendTrace(const ayxia_trace_channel* channel, const ayxia_trace_arg* args, size_t nargs);
+      void SendTrace(ayxia_trace_channel& channel, const ayxia_trace_arg* args, size_t nargs);
 
       void InitChannel(const ayxia_trace_channel* channel);
 
