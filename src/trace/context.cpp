@@ -11,11 +11,17 @@
 #  define DEBUG_LOG(s)
 #endif
 
+#include <unistd.h>
+
 namespace
 {
   const size_t kBufferSize = 65536;
 
-  thread_local uint32_t s_threadid = GetCurrentThreadId();
+#if defined _WIN32
+  thread_local int32_t s_threadid = -1;
+#else
+  __thread int32_t s_threadid = -1;
+#endif
 
   template<typename T>
   char* write_buffer(char* p, T arg) {
@@ -71,6 +77,14 @@ void ayxia::trace::Context::SendTrace(ayxia_trace_channel& channel, const ayxia_
   if (!m_loggingEnabled) {
     channel.channel_disable = 1;
     return;
+  }
+  
+  if (s_threadid == -1) {
+#if defined _WIN32
+    s_threadid = GetCurrentThreadId();
+#else
+    s_threadid = getpid();
+#endif
   }
 
   std::array<char, 4096> buf;
@@ -237,6 +251,7 @@ void ayxia::trace::Context::OnClose(uv_tcp_t* stream)
 
 ayxia::trace::Context::TimestampT ayxia::trace::Context::GetTimestamp()
 {
+#if defined _WIN32
   LARGE_INTEGER counter;
   QueryPerformanceCounter(&counter);
   uint64_t timestamp = uint64_t(counter.HighPart) << 32 | counter.LowPart;
@@ -244,8 +259,11 @@ ayxia::trace::Context::TimestampT ayxia::trace::Context::GetTimestamp()
   LARGE_INTEGER freq_;
   QueryPerformanceFrequency(&freq_);
   uint64_t freq = uint64_t(freq_.HighPart) << 32 | freq_.LowPart;
-
-  return timestamp / 10; 
+  return timestamp / 10;
+#else
+  return 0;
+#endif
+  
 }
 
 void ayxia::trace::Context::SendToLogger(
