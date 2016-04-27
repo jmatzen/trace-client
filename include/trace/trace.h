@@ -72,8 +72,6 @@ extern "C" {
 
   TRACE_CLIENT_EXPORT void ayxia_tc_init_channel(const ayxia_trace_channel* channel);
 
-  TRACE_CLIENT_EXPORT void ayxia_tc_format(char* s, size_t n, const char* format, const ayxia_trace_arg* arg, size_t nargs);
-
 
 #if defined(__cplusplus)
 }
