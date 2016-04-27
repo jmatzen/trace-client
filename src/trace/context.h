@@ -42,8 +42,6 @@ namespace ayxia
 
       void OnRead(uv_tcp_t* stream, ssize_t nread, const uv_buf_t* buf);
 
-
-
       void OnClose(uv_tcp_t* stream);
 
     private:

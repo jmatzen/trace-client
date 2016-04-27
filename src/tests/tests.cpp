@@ -37,6 +37,8 @@ std::string format(const char* format, const Args& ...args)
   make_format_args(argsarr.begin(), args...);
   std::array<char, 1024> buf;
   ayxia_tc_format(buf.data(), buf.size()-1, format, argsarr.data(), argsarr.size());
+  for (auto& arg : argsarr)
+    free((void*)arg.parg);
   return buf.data();
 }
 

@@ -76,10 +76,11 @@ void ayxia::trace::Context::SendTrace(ayxia_trace_channel& channel, const ayxia_
   auto ptr = buf.data();
   ptr = write_buffer(ptr, uint64_t(std::addressof(channel)));
 #if defined _WIN32
-  FILETIME ft;
-  GetSystemTimeAsFileTime(&ft);
-  uint64_t timestamp = uint64_t(ft.dwHighDateTime) << 32 | ft.dwLowDateTime;
+  LARGE_INTEGER counter;
+  QueryPerformanceCounter(&counter);
+  uint64_t timestamp = uint64_t(counter.HighPart) << 32 | counter.LowPart;
   timestamp -= m_timestampBaseTime;
+  timestamp /= 10; // convert from 100ns to 1us.
 #else
   uint64_t timestamp = 0;
 #endif
@@ -135,6 +136,18 @@ void ayxia::trace::Context::Initialize()
 
 void ayxia::trace::Context::ThreadEntryPoint()
 {
+  //initialize libuv
+  uv_loop_init(&m_uvLoop);
+
+  // initialize async event handler
+  uv_async_init(&m_uvLoop, &m_uvSignal, [](uv_async_t* as)
+  {
+    ((Context*)as->data)->OnSignal();
+  });
+  m_uvSignal.data = this;
+
+  uv_timer_init(&m_uvLoop, &m_uvTimer);
+  m_uvTimer.data = this;
 
 
   // initialize the connection to the server
@@ -234,12 +247,11 @@ void ayxia::trace::Context::OnSignal()
   DEBUG_LOG("OnSignal");
   Flush();
 
-  // check thread joinable state and stop libuv if
-  // we're tearing down
   if (!m_thread.joinable())
   {
-    DEBUG_LOG("stopping network loop");
-    uv_stop(&m_uvLoop);
+    uv_close((uv_handle_t*)&m_uvSignal, nullptr);
+    uv_close((uv_handle_t*)&m_uvTimer, nullptr);
+    uv_close((uv_handle_t*)m_uvStream.get(), nullptr);
   }
 }
 
@@ -279,7 +291,7 @@ void ayxia::trace::Context::Flush()
       [](uv_write_t* req, int status)
     {
       auto ctx = static_cast<write_ctx*>(req);
-      delete[] (char*)ctx->base;
+      delete[](char*)ctx->base;
       delete ctx;
     });
   }
@@ -338,24 +350,12 @@ ayxia::trace::Context::Context()
   : m_loggingEnabled(false)
   , m_uvLoop()
 {
-  //initialize libuv
-  uv_loop_init(&m_uvLoop);
-
-  // initialize async event handler
-  uv_async_init(&m_uvLoop, &m_uvSignal, [](uv_async_t* as)
-  {
-    ((Context*)as->data)->OnSignal();
-  });
-  m_uvSignal.data = this;
-
-  uv_timer_init(&m_uvLoop, &m_uvTimer);
-  m_uvTimer.data = this;
 
   m_buffer.reserve(kBufferSize);
 
 #if defined _WIN32
-  FILETIME ft;
-  GetSystemTimeAsFileTime(&ft);
-  m_timestampBaseTime = uint64_t(ft.dwHighDateTime) << 32 | ft.dwLowDateTime;
+  LARGE_INTEGER counter;
+  QueryPerformanceCounter(&counter);
+  m_timestampBaseTime = uint64_t(counter.HighPart) << 32 | counter.LowPart;
 #endif
 }

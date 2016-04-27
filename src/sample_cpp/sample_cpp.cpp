@@ -22,7 +22,10 @@ struct InitAllocHook
 int main()
 {
   ayxia_tc_initialize();
-  TRACE_INFO("channel", "this is a test {0} {1} {2}", 3, "test", L"foo");
+  for (int i = 0; i < 1000000; ++i)
+  {
+    TRACE_INFO("channel", "this is a test {0} {1} {2,16:4} {3:4} {4} 0x{0:x}", i, "test", float(i), double(i));
+  }
   std::this_thread::sleep_for(
     std::chrono::milliseconds(1000));
   ayxia_tc_shutdown();
