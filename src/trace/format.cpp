@@ -23,7 +23,7 @@ FormatSpec parse_format_specifier(const std::string& fmt)
     s_done
   } state = s_begin;
 
-  auto fs = FormatSpec();
+  auto fs = FormatSpec { "", 0, -1 };
   bool neg = false;
 
   for (auto ch : fmt) {
@@ -117,17 +117,18 @@ inline void format_arg(std::ostream& s, const std::string& fmt, const void* p)
 {
   auto fs = parse_format_specifier(fmt);
 
-  s << std::setprecision(fs.prec);
-
   if (fs.align >= 0) 
     s << std::setw(fs.align) << std::right;
   else 
     s << std::setw(-fs.align) << std::left;
 
-  if (fs.format == "x" || fs.format == "X") 
+  if (fs.format == "x" || fs.format == "X") {
+    s << std::setprecision(0);
     s << std::hex;
-  else
+  } else {
+    s << std::setprecision(fs.prec==-1?6:fs.prec);
     s << std::dec;
+  }
 
   T value;
   memcpy(&value, p, sizeof(T));

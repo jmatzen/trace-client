@@ -74,8 +74,8 @@ TEST(TestHex)
   CHECK_EQUAL("0xffff", format("0x{0:x}", int16_t(0xffff)));
   CHECK_EQUAL("0xffffffff", format("0x{0:x}", int32_t(0xffffffff)));
   CHECK_EQUAL("0xfeadbeefdeadbeef", format("0x{0:x}", int64_t(0xfeadbeefdeadbeefLL)));
-  CHECK_EQUAL("0x3.14159", format("0x{0:x}", 3.14159));
-  CHECK_EQUAL("0x3.14159", format("0x{0:x}", 3.14159f));
+  CHECK_EQUAL("0x3", format("0x{0:x}", 3.14159));
+  CHECK_EQUAL("0x3", format("0x{0:x}", 3.14159f));
   CHECK_EQUAL("0xhello", format("0x{0:x}", "hello"));
   CHECK_EQUAL("0xhello", format("0x{0:}", "hello"));
 }
