@@ -23,7 +23,7 @@ endif()
 add_subdirectory(src/trace)
 add_subdirectory(src/sample_c)
 add_subdirectory(src/sample_cpp)
-add_subdirectory(src/tests)
+#add_subdirectory(src/tests)
 add_subdirectory(submodules/unittest-cpp)
 
 if (WIN32)
