@@ -21,7 +21,7 @@ struct InitAllocHook
 
 int main()
 {
-  ayxia_tc_initialize();
+  ayxia_tc_initialize(&ayxia_trace_initialize{ "sample_cpp" });
   for (int i = 0; i < 1000000; ++i)
   {
     TRACE_INFO("channel", "this is a test {0} {1} {2,16:4} {3:4} {4} 0x{0:x}", i, "test", float(i), double(i));

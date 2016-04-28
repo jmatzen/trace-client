@@ -17,10 +17,6 @@
 extern "C" {
 #endif
 
-  TRACE_CLIENT_EXPORT void ayxia_tc_initialize();
-
-  TRACE_CLIENT_EXPORT void ayxia_tc_shutdown();
-
   typedef struct ayxia_trace_channel_
   {
     uint32_t level : 8;
@@ -50,9 +46,11 @@ extern "C" {
 
   enum ayxia_trace_command
   {
-    atc_protocol_version,
+    atc_initialize,
     atc_init_channel,
     atc_trace,
+    atc_end_frame,
+    atc_thread_name,
   };
 
   typedef struct ayxia_trace_arg_
@@ -60,6 +58,18 @@ extern "C" {
     const void* parg;
     enum ayxia_trace_type type;
   } ayxia_trace_arg;
+
+  typedef struct ayxia_trace_initialize_
+  {
+    const char* process_name;
+    size_t max_network_memory_kb;
+    int allow_dropped_frames;
+  } ayxia_trace_initialize;
+
+  TRACE_CLIENT_EXPORT void ayxia_tc_initialize(const ayxia_trace_initialize* init);
+
+  TRACE_CLIENT_EXPORT void ayxia_tc_shutdown();
+
 
   TRACE_CLIENT_EXPORT void ayxia_tc_trace(
     ayxia_trace_channel* channel,
@@ -72,6 +82,9 @@ extern "C" {
 
   TRACE_CLIENT_EXPORT void ayxia_tc_init_channel(const ayxia_trace_channel* channel);
 
+  TRACE_CLIENT_EXPORT void ayxia_tc_end_frame_marker();
+
+  TRACE_CLIENT_EXPORT void ayxia_tc_thread_name(const char * name);
 
 #if defined(__cplusplus)
 }

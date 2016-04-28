@@ -15,6 +15,7 @@ namespace
 {
   const size_t kBufferSize = 65536;
 
+  thread_local uint32_t s_threadid = GetCurrentThreadId();
 
   template<typename T>
   char* write_buffer(char* p, T arg) {
@@ -57,7 +58,7 @@ namespace
     p = write_buffer(p, (const T*)arg.parg);
   }
 
-  void allocator(uv_handle_t* handle, size_t size, uv_buf_t* buf)
+  void allocator(uv_handle_t* , size_t size, uv_buf_t* buf)
   {
     buf->base = new char[size];
     buf->len = (size);
@@ -75,17 +76,8 @@ void ayxia::trace::Context::SendTrace(ayxia_trace_channel& channel, const ayxia_
   std::array<char, 4096> buf;
   auto ptr = buf.data();
   ptr = write_buffer(ptr, uint64_t(std::addressof(channel)));
-#if defined _WIN32
-  LARGE_INTEGER counter;
-  QueryPerformanceCounter(&counter);
-  uint64_t timestamp = uint64_t(counter.HighPart) << 32 | counter.LowPart;
-  timestamp -= m_timestampBaseTime;
-  timestamp /= 10; // convert from 100ns to 1us.
-#else
-  uint64_t timestamp = 0;
-#endif
-  
-  ptr = write_buffer(ptr, timestamp);
+  ptr = write_buffer(ptr, GetTimestamp());
+  ptr = write_buffer(ptr, s_threadid);
   ptr = write_buffer(ptr, uint8_t(nargs));
 
   for (auto it = args; it != args + nargs; ++it) {
@@ -132,6 +124,21 @@ void ayxia::trace::Context::Initialize()
   m_thread = std::thread(std::bind(&Context::ThreadEntryPoint, this));
   DEBUG_LOG("waiting for thread creation to complete.");
   m_condvar.wait(lk);
+}
+
+void ayxia::trace::Context::EndFrameMarker()
+{
+  TimestampT ts = GetTimestamp();
+  SendToLogger(atc_end_frame, (char*)&ts, sizeof(TimestampT));
+}
+
+void ayxia::trace::Context::SetThreadName(const char * name)
+{
+  auto p = (char*)alloca(strlen(name) + 2 + sizeof(s_threadid));
+  auto q = p;
+  q = write_buffer(q, s_threadid);
+  q = write_buffer(p, name);
+  SendToLogger(atc_thread_name, p, q - p);
 }
 
 void ayxia::trace::Context::ThreadEntryPoint()
@@ -210,7 +217,7 @@ void ayxia::trace::Context::OnConnect(uv_connect_t* con, int status)
   m_condvar.notify_all();
 }
 
-void ayxia::trace::Context::OnRead(uv_tcp_t * stream, ssize_t nread, const uv_buf_t * buf)
+void ayxia::trace::Context::OnRead(uv_tcp_t * stream, ssize_t nread, const uv_buf_t * /*buf*/)
 {
   assert(stream == m_uvStream.get());
   if (nread <= 0)
@@ -226,6 +233,19 @@ void ayxia::trace::Context::OnClose(uv_tcp_t* stream)
 {
   assert(stream == m_uvStream.get());
   m_uvStream.reset();
+}
+
+ayxia::trace::Context::TimestampT ayxia::trace::Context::GetTimestamp()
+{
+  LARGE_INTEGER counter;
+  QueryPerformanceCounter(&counter);
+  uint64_t timestamp = uint64_t(counter.HighPart) << 32 | counter.LowPart;
+  timestamp -= m_timestampBaseTime;
+  LARGE_INTEGER freq_;
+  QueryPerformanceFrequency(&freq_);
+  uint64_t freq = uint64_t(freq_.HighPart) << 32 | freq_.LowPart;
+
+  return timestamp / 10; 
 }
 
 void ayxia::trace::Context::SendToLogger(
@@ -279,16 +299,11 @@ void ayxia::trace::Context::Flush()
     ctx->base = new char[tmp.size()];
     memcpy(ctx->base, tmp.data(), tmp.size());
 
-
-    //typedef void (*uv_write_cb)(uv_write_t* req, int status);
-
-    auto buf = static_cast<uv_buf_t*>(ctx);
-
     uv_write(ctx,
       (uv_stream_t*)m_uvStream.get(), 
       static_cast<uv_buf_t*>(ctx), 
       1,
-      [](uv_write_t* req, int status)
+      [](uv_write_t* req, int /*status*/)
     {
       auto ctx = static_cast<write_ctx*>(req);
       delete[](char*)ctx->base;
@@ -346,7 +361,7 @@ ayxia::trace::Context::~Context()
   uv_loop_close(&m_uvLoop);
 }
 
-ayxia::trace::Context::Context()
+ayxia::trace::Context::Context(const ayxia_trace_initialize& /*init*/)
   : m_loggingEnabled(false)
   , m_uvLoop()
 {

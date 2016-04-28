@@ -14,7 +14,7 @@ namespace ayxia
     class Context
     {
     public:
-      Context();
+      Context(const ayxia_trace_initialize& init);
 
       ~Context();
 
@@ -24,7 +24,13 @@ namespace ayxia
 
       void Initialize();
 
+      void EndFrameMarker();
+
+      void SetThreadName(const char* name);
+
     private:
+
+      typedef uint64_t TimestampT;
 
       void ThreadEntryPoint();
 
@@ -43,6 +49,8 @@ namespace ayxia
       void OnRead(uv_tcp_t* stream, ssize_t nread, const uv_buf_t* buf);
 
       void OnClose(uv_tcp_t* stream);
+
+      TimestampT GetTimestamp();
 
     private:
       std::thread m_thread;
