@@ -91,7 +91,7 @@ void ayxia::trace::Context::SendTrace(ayxia_trace_channel& channel, const ayxia_
 
   std::array<char, 4096> buf;
   auto ptr = buf.data();
-  ptr = write_buffer(ptr, uint64_t(std::addressof(channel)));
+  ptr = write_buffer(ptr, uint64_t(channel.cookie));
   ptr = write_buffer(ptr, GetTimestamp());
   ptr = write_buffer(ptr, s_threadid);
   ptr = write_buffer(ptr, uint8_t(nargs));

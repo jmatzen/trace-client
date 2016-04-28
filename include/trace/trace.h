@@ -14,6 +14,12 @@
 #define AYX_TRACE_UNIQ(x,l) AYX_TRACE_UNIQ_(x,l)
 
 #if defined (__cplusplus)
+#  define AYXIA_MUTABLE mutable
+#else
+#  define AYXIA_MUTABLE
+#endif
+
+#if defined (__cplusplus)
 extern "C" {
 #endif
 
@@ -22,7 +28,7 @@ extern "C" {
     uint32_t level : 8;
     uint32_t lineno : 23;
     uint32_t channel_disable : 1; // out parameter
-    mutable uint32_t cookie; // out parameter
+    AYXIA_MUTABLE uint32_t cookie; // out parameter
     const char* channel;
     const char* file;
     const char* func;
