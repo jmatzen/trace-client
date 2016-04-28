@@ -21,7 +21,8 @@ extern "C" {
   {
     uint32_t level : 8;
     uint32_t lineno : 23;
-    uint32_t channel_disable : 1;
+    uint32_t channel_disable : 1; // out parameter
+    mutable uint32_t cookie; // out parameter
     const char* channel;
     const char* file;
     const char* func;

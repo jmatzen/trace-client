@@ -11,7 +11,9 @@
 #  define DEBUG_LOG(s)
 #endif
 
-#include <unistd.h>
+#if ! defined _WIN32
+#  include <unistd.h>
+#endif
 
 namespace
 {
@@ -120,9 +122,15 @@ void ayxia::trace::Context::InitChannel(const ayxia_trace_channel * channel)
   if (!m_loggingEnabled)
     return;
 
+  if (channel->cookie == 0)
+  {
+    static int next = 1;
+    channel->cookie = next++;
+  }
+
   std::array<char, 4096> buf;
   auto p = buf.data();
-  p = write_buffer(p, uint64_t(channel));
+  p = write_buffer(p, uint64_t(channel->cookie));
   p = write_buffer(p, uint8_t(channel->level));
   p = write_buffer(p, uint16_t(channel->lineno));
   p = write_buffer(p, channel->channel);
