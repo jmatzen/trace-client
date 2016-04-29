@@ -3,6 +3,7 @@
 #include <cassert>
 #include <array>
 #include <type_traits>
+#include <atomic>
 
 #if defined _DEBUG
 #  include <iostream>
@@ -17,6 +18,8 @@
 
 namespace
 {
+  std::atomic<unsigned> nextChannelId(1U);
+
   const size_t kBufferSize = 65536;
 
 #if defined _WIN32
@@ -124,8 +127,7 @@ void ayxia::trace::Context::InitChannel(const ayxia_trace_channel * channel)
 
   if (channel->cookie == 0)
   {
-    static int next = 1;
-    channel->cookie = next++;
+    channel->cookie = nextChannelId++;
   }
 
   std::array<char, 4096> buf;
