@@ -5,6 +5,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <vector>
+#include <string>
 #include <uv.h>
 
 namespace ayxia
@@ -64,6 +65,8 @@ namespace ayxia
       uv_timer_t m_uvTimer;
       std::unique_ptr<uv_tcp_t> m_uvStream;
       uint64_t m_timestampBaseTime;
+      
+      std::string m_remoteAddress;
     };
   }
 }

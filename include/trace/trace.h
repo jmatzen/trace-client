@@ -68,6 +68,7 @@ extern "C" {
 
   typedef struct ayxia_trace_initialize_
   {
+    const char* remote_address;
     const char* process_name;
     size_t max_network_memory_kb;
     int allow_dropped_frames;

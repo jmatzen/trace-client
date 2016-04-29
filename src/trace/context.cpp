@@ -201,6 +201,26 @@ void ayxia::trace::Context::ThreadEntryPoint()
   inet_pton(AF_INET, "127.0.0.1", &sin.sin_addr);
 #endif
 
+  auto aireq = new uv_getaddrinfo_t();
+  aireq->data = this;
+  
+  auto ai = addrinfo();
+  ai.ai_family = AF_INET;
+  uv_getaddrinfo(
+                 &m_uvLoop,
+                 aireq,
+                 [](uv_getaddrinfo_t* req, int status, struct addrinfo* res)
+                 {
+                   auto sin = sockaddr_in();
+                   sin.sin_family = res->ai_family;
+                   sin.sin_port = htons(8372);
+                   uv_freeaddrinfo(res);
+                   delete req;
+                 },
+                 "localhost",
+                 0,
+                 &ai);
+                 
   uv_tcp_connect(con, stream, (sockaddr*)&sin, [](uv_connect_t* const con, int status)
   {
     auto stream = (uv_tcp_t*)con->data;
@@ -299,7 +319,8 @@ void ayxia::trace::Context::OnSignal()
   {
     uv_close((uv_handle_t*)&m_uvSignal, nullptr);
     uv_close((uv_handle_t*)&m_uvTimer, nullptr);
-    uv_close((uv_handle_t*)m_uvStream.get(), nullptr);
+    if (m_uvStream)
+      uv_close((uv_handle_t*)m_uvStream.get(), nullptr);
   }
 }
 
@@ -389,9 +410,10 @@ ayxia::trace::Context::~Context()
   uv_loop_close(&m_uvLoop);
 }
 
-ayxia::trace::Context::Context(const ayxia_trace_initialize& /*init*/)
+ayxia::trace::Context::Context(const ayxia_trace_initialize& init)
   : m_loggingEnabled(false)
   , m_uvLoop()
+  , m_remoteAddress(init.remote_address?init.remote_address:"localhost")
 {
 
   m_buffer.reserve(kBufferSize);
