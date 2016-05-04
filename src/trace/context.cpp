@@ -211,9 +211,16 @@ void ayxia::trace::Context::ThreadEntryPoint()
                  aireq,
                  [](uv_getaddrinfo_t* req, int status, struct addrinfo* res)
                  {
-                   auto sin = sockaddr_in();
-                   sin.sin_family = res->ai_family;
-                   sin.sin_port = htons(8372);
+                   for (auto pres = res ; pres; pres = pres->ai_next)
+                   {
+                     if (pres->ai_family = AF_INET)
+                     {
+                       auto sin = sockaddr_in();
+                       memcpy(&sin, pres->ai_addr, sizeof(sockaddr_in));
+                       sin.sin_port = htons(8372);
+                       break;
+                     }
+                   }
                    uv_freeaddrinfo(res);
                    delete req;
                  },
