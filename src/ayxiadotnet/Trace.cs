@@ -116,7 +116,7 @@ namespace Ayxia.Trace
 
     public static void Debug(Type obj, String format, params Object[] args) 
     {
-      ayxia_tc_type_trace(obj.GetType().FullName, String.Format(format, args));
+      ayxia_tc_type_trace(obj.FullName, String.Format(format, args));
     }
 
     public static void Debug(object obj, String format, params Object[] args)

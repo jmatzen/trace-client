@@ -184,7 +184,7 @@ void ayxia::trace::Context::TypeTrace(const char * typestr, const char * message
   auto channel = ayxia_trace_channel();
   channel.channel = "test";
   channel.file = "";
-  channel.func = "";
+  channel.func = typestr;
   channel.format = "{0}";
   {
     std::unique_lock<std::mutex> lk(m_mutex);
@@ -195,6 +195,10 @@ void ayxia::trace::Context::TypeTrace(const char * typestr, const char * message
       InitChannel(&channel);
       lk.lock();
       it = m_typeToChannelMap.insert(std::make_pair(typestrhash, channel.cookie)).first;
+    }
+    else
+    {
+      channel.cookie = it->second;
     }
   }
   ayxia_trace_arg arg = {
