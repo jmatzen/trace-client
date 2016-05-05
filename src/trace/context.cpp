@@ -4,6 +4,8 @@
 #include <array>
 #include <type_traits>
 #include <atomic>
+#include <mutex>
+#include <condition_variable>
 
 #if defined _DEBUG
 #  include <iostream>
@@ -201,33 +203,38 @@ void ayxia::trace::Context::ThreadEntryPoint()
   inet_pton(AF_INET, "127.0.0.1", &sin.sin_addr);
 #endif
 
-  auto aireq = new uv_getaddrinfo_t();
-  aireq->data = this;
+  
+  auto getaddr_req = uv_getaddrinfo_t();
+  getaddr_req.data = this;
   
   auto ai = addrinfo();
   ai.ai_family = AF_INET;
+  
   uv_getaddrinfo(
                  &m_uvLoop,
-                 aireq,
-                 [](uv_getaddrinfo_t* req, int status, struct addrinfo* res)
+                 &getaddr_req,
+                 [](uv_getaddrinfo_t* req, int status, addrinfo* res)
                  {
-                   for (auto pres = res ; pres; pres = pres->ai_next)
-                   {
-                     if (pres->ai_family = AF_INET)
-                     {
-                       auto sin = sockaddr_in();
-                       memcpy(&sin, pres->ai_addr, sizeof(sockaddr_in));
-                       sin.sin_port = htons(8372);
-                       break;
-                     }
-                   }
+                   ((Context*)req->data)->OnGetAddrInfo(status, res);
+//                   auto& req_ = *(getaddrinfo_ctx*)req;
+//                   
+//                   for (auto pres = res ; pres; pres = pres->ai_next)
+//                   {
+//                     if (pres->ai_family == AF_INET)
+//                     {
+//                       auto sin = sockaddr_in();
+//                       memcpy(&sin, pres->ai_addr, sizeof(sockaddr_in));
+//                       sin.sin_port = htons(8372);
+//                       
+//                       break;
+//                     }
+//                   }
                    uv_freeaddrinfo(res);
-                   delete req;
                  },
                  "localhost",
                  0,
                  &ai);
-                 
+
   uv_tcp_connect(con, stream, (sockaddr*)&sin, [](uv_connect_t* const con, int status)
   {
     auto stream = (uv_tcp_t*)con->data;
@@ -239,6 +246,13 @@ void ayxia::trace::Context::ThreadEntryPoint()
   uv_run(&m_uvLoop, UV_RUN_DEFAULT);
 
   DEBUG_LOG("exiting network thread");
+}
+
+void ayxia::trace::Context::OnGetAddrInfo(int status,const addrinfo *result)
+{
+  for (; ainfo; ainfo=ainfo->next) {
+    
+  }
 }
 
 void ayxia::trace::Context::OnConnect(uv_connect_t* con, int status)
