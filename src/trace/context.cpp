@@ -74,7 +74,7 @@ namespace
   void allocator(uv_handle_t* , size_t size, uv_buf_t* buf)
   {
     buf->base = new char[size];
-    buf->len = (size);
+    buf->len = unsigned(size);
   }
 }
 
@@ -122,15 +122,26 @@ void ayxia::trace::Context::SendTrace(ayxia_trace_channel& channel, const ayxia_
   SendToLogger(atc_trace, buf.data(), ptr-buf.data());
 }
 
-void ayxia::trace::Context::InitChannel(const ayxia_trace_channel * channel)
+void ayxia::trace::Context::InitChannel(ayxia_trace_channel * channel)
 {
+
   if (!m_loggingEnabled)
     return;
 
   if (channel->cookie == 0)
   {
-    channel->cookie = nextChannelId++;
+    std::unique_lock<std::mutex> lk(m_mutex);
+    if (channel->cookie == 0)
+      channel->cookie = nextChannelId++;
   }
+
+  // fix up the source file name
+  const char* delim = strrchr(channel->file, '\\');
+  if (!delim)
+    delim = strrchr(channel->file, '/');
+  if (delim)
+    channel->file = ++delim;
+
 
   std::array<char, 4096> buf;
   auto p = buf.data();
@@ -167,6 +178,31 @@ void ayxia::trace::Context::SetThreadName(const char * name)
   SendToLogger(atc_thread_name, p, q - p);
 }
 
+void ayxia::trace::Context::TypeTrace(const char * typestr, const char * message)
+{
+  auto typestrhash = std::hash<const char*>()(typestr);
+  auto channel = ayxia_trace_channel();
+  channel.channel = "test";
+  channel.file = "";
+  channel.func = "";
+  channel.format = "{0}";
+  {
+    std::unique_lock<std::mutex> lk(m_mutex);
+    auto it = m_typeToChannelMap.find(typestrhash);
+    if (it == m_typeToChannelMap.end())
+    {
+      lk.unlock();
+      InitChannel(&channel);
+      lk.lock();
+      it = m_typeToChannelMap.insert(std::make_pair(typestrhash, channel.cookie)).first;
+    }
+  }
+  ayxia_trace_arg arg = {
+    message, att_string
+  };
+  SendTrace(channel, &arg, 1);
+}
+
 void ayxia::trace::Context::ThreadEntryPoint()
 {
   //initialize libuv
@@ -183,32 +219,11 @@ void ayxia::trace::Context::ThreadEntryPoint()
   m_uvTimer.data = this;
 
 
-  // initialize the connection to the server
-  auto stream = new uv_tcp_t();
-  uv_tcp_init(&m_uvLoop, stream);
-  stream->data = this;
-
-  auto con = new uv_connect_t();
-  con->data = stream;
-
-#if 0
-  auto sin = sockaddr_in6();
-  sin.sin6_family = AF_INET6;
-  sin.sin6_port = htons(8372);
-  inet_pton(AF_INET6, "::1", &sin.sin6_addr);
-#else
-  auto sin = sockaddr_in();
-  sin.sin_family = AF_INET;
-  sin.sin_port = htons(8372);
-  inet_pton(AF_INET, "127.0.0.1", &sin.sin_addr);
-#endif
-
-  
+  // this magically remains on the stack
   auto getaddr_req = uv_getaddrinfo_t();
   getaddr_req.data = this;
   
   auto ai = addrinfo();
-  ai.ai_family = AF_INET;
   
   uv_getaddrinfo(
                  &m_uvLoop,
@@ -216,31 +231,12 @@ void ayxia::trace::Context::ThreadEntryPoint()
                  [](uv_getaddrinfo_t* req, int status, addrinfo* res)
                  {
                    ((Context*)req->data)->OnGetAddrInfo(status, res);
-//                   auto& req_ = *(getaddrinfo_ctx*)req;
-//                   
-//                   for (auto pres = res ; pres; pres = pres->ai_next)
-//                   {
-//                     if (pres->ai_family == AF_INET)
-//                     {
-//                       auto sin = sockaddr_in();
-//                       memcpy(&sin, pres->ai_addr, sizeof(sockaddr_in));
-//                       sin.sin_port = htons(8372);
-//                       
-//                       break;
-//                     }
-//                   }
                    uv_freeaddrinfo(res);
                  },
-                 "localhost",
+                 m_remoteHost.c_str(),
                  0,
                  &ai);
 
-  uv_tcp_connect(con, stream, (sockaddr*)&sin, [](uv_connect_t* const con, int status)
-  {
-    auto stream = (uv_tcp_t*)con->data;
-    auto context = (Context*)stream->data;
-    context->OnConnect(con, status);
-  });
 
 
   uv_run(&m_uvLoop, UV_RUN_DEFAULT);
@@ -248,10 +244,54 @@ void ayxia::trace::Context::ThreadEntryPoint()
   DEBUG_LOG("exiting network thread");
 }
 
-void ayxia::trace::Context::OnGetAddrInfo(int status,const addrinfo *result)
+void ayxia::trace::Context::OnGetAddrInfo(int status,const addrinfo *addr)
 {
-  for (; ainfo; ainfo=ainfo->next) {
-    
+  const addrinfo* theone = 0;
+
+  for (; addr; addr = addr->ai_next) {
+    if (addr->ai_family == AF_INET) {
+      theone = addr;
+    }/* else if (addr->ai_family == AF_INET6) {
+      theone = addr;
+      break;
+    }*/
+  }
+
+  if (theone)
+  {
+    union 
+    {
+      sockaddr* saddr;
+      sockaddr_in* sin4;
+      sockaddr_in6* sin6;
+    };
+
+    saddr = (sockaddr*)alloca(theone->ai_addrlen);
+    memcpy(saddr, theone->ai_addr, theone->ai_addrlen);
+
+    if (theone->ai_family == AF_INET)
+    {
+      sin4->sin_port = htons(8372);
+    }
+    else
+    {
+      sin6->sin6_port = htons(8372);
+    }
+
+    // initialize the connection to the server
+    auto stream = new uv_tcp_t();
+    uv_tcp_init(&m_uvLoop, stream);
+    stream->data = this;
+
+    auto con = new uv_connect_t();
+    con->data = stream;
+
+    uv_tcp_connect(con, stream, saddr, [](uv_connect_t* const con, int status)
+    {
+      auto stream = (uv_tcp_t*)con->data;
+      auto context = (Context*)stream->data;
+      context->OnConnect(con, status);
+    });
   }
 }
 
@@ -262,7 +302,10 @@ void ayxia::trace::Context::OnConnect(uv_connect_t* con, int status)
   if (status != 0)
   {
     DEBUG_LOG(uv_strerror(status));
-    delete stream;
+    uv_close((uv_handle_t*)stream, [](uv_handle_t* stream)
+    {
+      delete stream;
+    });
   }
   else
   {
@@ -365,7 +408,7 @@ void ayxia::trace::Context::Flush()
       m_condvar.notify_all();
     }
     auto ctx = new write_ctx();
-    ctx->len = (tmp.size());
+    ctx->len = unsigned(tmp.size());
     ctx->base = new char[tmp.size()];
     memcpy(ctx->base, tmp.data(), tmp.size());
 
@@ -412,6 +455,7 @@ ayxia::trace::Context::~Context()
   DEBUG_LOG("tearing down connection context");
   // tear down thread and network library
 
+
   assert(m_thread.joinable());
 
   if (m_thread.joinable())
@@ -434,7 +478,7 @@ ayxia::trace::Context::~Context()
 ayxia::trace::Context::Context(const ayxia_trace_initialize& init)
   : m_loggingEnabled(false)
   , m_uvLoop()
-  , m_remoteAddress(init.remote_address?init.remote_address:"localhost")
+  , m_remoteHost(init.remote_host?init.remote_host :"localhost")
 {
 
   m_buffer.reserve(kBufferSize);

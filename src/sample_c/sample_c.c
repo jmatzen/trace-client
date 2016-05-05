@@ -1,5 +1,5 @@
 #include <trace/trace.h>
-
+#include <Windows.h>
 int main()
 {
   ayxia_trace_initialize init =
@@ -11,5 +11,6 @@ int main()
 
   ayxia_tc_initialize(&init);
   TRACE_INFO("channel", "this is a test %d", 3);
+  Sleep(1000);
   ayxia_tc_shutdown();
 }

@@ -74,3 +74,11 @@ elseif(APPLE)
   add_definitions(-D_DARWIN_USE_64_BIT_INODE=1 -D_DARWIN_UNLIMITED_SELECT=1)
 endif()
 add_library(libuv STATIC ${libuvfiles})
+
+include_external_msproject(
+  TestAyxiaDotNet ${CMAKE_SOURCE_DIR}/src/TestAyxiaDotNet/TestAyxiaDotNet.csproj
+  TYPE FAE04EC0-301F-11D3-BF4B-00C04F79EFBC)
+
+include_external_msproject(
+  ayxiadotnet ${CMAKE_SOURCE_DIR}/src/ayxiadotnet/ayxiadotnet.csproj
+  TYPE FAE04EC0-301F-11D3-BF4B-00C04F79EFBC)

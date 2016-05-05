@@ -13,11 +13,6 @@
 #define AYX_TRACE_UNIQ_(x,l) x ## l
 #define AYX_TRACE_UNIQ(x,l) AYX_TRACE_UNIQ_(x,l)
 
-#if defined (__cplusplus)
-#  define AYXIA_MUTABLE mutable
-#else
-#  define AYXIA_MUTABLE
-#endif
 
 #if defined (__cplusplus)
 extern "C" {
@@ -28,7 +23,7 @@ extern "C" {
     uint32_t level : 8;
     uint32_t lineno : 23;
     uint32_t channel_disable : 1; // out parameter
-    AYXIA_MUTABLE uint32_t cookie; // out parameter
+    uint32_t cookie; // out parameter
     const char* channel;
     const char* file;
     const char* func;
@@ -68,11 +63,28 @@ extern "C" {
 
   typedef struct ayxia_trace_initialize_
   {
-    const char* remote_address;
+    const char* remote_host;
     const char* process_name;
     size_t max_network_memory_kb;
     int allow_dropped_frames;
   } ayxia_trace_initialize;
+
+#if defined (__cplusplus)
+  class TraceInitialize : public ayxia_trace_initialize
+  {
+  public:
+    TraceInitialize(const char *RemoteHost,
+      const char* ProcessNme,
+      size_t MaxNetworkMemoryKb,
+      bool AllowDroppedFrames)
+    {
+      remote_host = RemoteHost;
+      process_name = ProcessNme;
+      max_network_memory_kb = MaxNetworkMemoryKb;
+      allow_dropped_frames = AllowDroppedFrames ? 1 : 0;
+    }
+  };
+#endif
 
   TRACE_CLIENT_EXPORT void ayxia_tc_initialize(const ayxia_trace_initialize* init);
 
@@ -85,14 +97,17 @@ extern "C" {
     size_t nargs);
 
   TRACE_CLIENT_EXPORT void ayxia_tc_trace_varargs(
-    const ayxia_trace_channel* channel,
+    ayxia_trace_channel* channel,
+    const char* format,
     ...);
 
-  TRACE_CLIENT_EXPORT void ayxia_tc_init_channel(const ayxia_trace_channel* channel);
+  TRACE_CLIENT_EXPORT void ayxia_tc_init_channel(ayxia_trace_channel* channel);
 
   TRACE_CLIENT_EXPORT void ayxia_tc_end_frame_marker();
 
   TRACE_CLIENT_EXPORT void ayxia_tc_thread_name(const char * name);
+
+  TRACE_CLIENT_EXPORT void ayxia_tc_type_trace(const char* typestr, const char* message);
 
 #if defined(__cplusplus)
 }
@@ -126,6 +141,7 @@ namespace ayxia
       {
         _channel.level = level;
         _channel.channel = channel;
+        _channel.cookie = 0;
         _channel.file = file;
         _channel.func = func;
         _channel.lineno = lineno;
@@ -202,9 +218,10 @@ namespace ayxia
 
 #define TRACE_INFO(ch, f, ...)  { \
     static ayxia_trace_channel AYX_TRACE_UNIQ(ayx_trace_, __LINE__) = { \
-      .level = 0,.channel = ch,.file = __FILE__,.func = __FUNCTION__,.lineno = __LINE__,.format = f }; \
+      .level = 0,.channel = ch,.file = __FILE__,.func = __FUNCTION__,.lineno = __LINE__,.format = "{0}" }; \
     if (!AYX_TRACE_UNIQ(ayx_trace_, __LINE__).channel_disable) \
-      ayxia_tc_trace_varargs(&AYX_TRACE_UNIQ(ayx_trace_, __LINE__), __VA_ARGS__); \
+      ayxia_tc_trace_varargs(&AYX_TRACE_UNIQ(ayx_trace_, __LINE__), f, __VA_ARGS__); \
 }
+//    static int q = ayxia_tc_init_channel(&AYX_TRACE_UNIQ(ayx_trace_, __LINE__)), 0; \
 
 #endif // __cplusplus

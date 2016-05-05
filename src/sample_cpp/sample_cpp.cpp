@@ -21,15 +21,13 @@ struct InitAllocHook
 
 int main()
 {
-  auto init = ayxia_trace_initialize{ "sample_cpp" };
+  auto init = TraceInitialize("localhost", "", 1024 * 1024, false);
   ayxia_tc_initialize(&init);
   
-  for (int i = 0; i < 1000000; ++i)
+  for (int i = 0; i < 10; ++i)
   {
     TRACE_INFO("channel", "this is a test {0} {1} {2,16:4} {3:4} {4} 0x{0:x}", i, "test", float(i), double(i));
   }
-  std::this_thread::sleep_for(
-    std::chrono::milliseconds(1000));
   ayxia_tc_shutdown();
 }
 

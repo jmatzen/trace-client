@@ -36,15 +36,18 @@ namespace Ayxia.Trace
   [StructLayout(LayoutKind.Sequential)]
   public struct ayxia_trace_arg
   {
-    public IntPtr ArgPointer;
+    [MarshalAs(UnmanagedType.LPStr)]
+    public string value;
 
     [MarshalAs(UnmanagedType.I4)]
-    ArgType type;
+    public ArgType type;
   }
 
   [StructLayout(LayoutKind.Sequential)]
   public struct ayxia_trace_initialize
   {
+    [MarshalAs(UnmanagedType.LPStr)]
+    public string RemoteHost;
     [MarshalAs(UnmanagedType.LPStr)]
     public string ProcessName;
     public IntPtr MaxNetworkMemoryKB;
@@ -97,11 +100,32 @@ namespace Ayxia.Trace
       [In,Out] ref ayxia_trace_channel channel);
 
     [DllImport("ayxiatrace.dll")]
+    public static extern void ayxia_tc_type_trace(
+      [MarshalAs(UnmanagedType.LPStr)]
+      string type, 
+      [MarshalAs(UnmanagedType.LPStr)]
+      string message);
+
+    [DllImport("ayxiatrace.dll")]
     public static extern void ayxia_tc_trace(
       [In] ref ayxia_trace_channel channel,
       [MarshalAs(UnmanagedType.LPArray)]
       [In] ayxia_trace_arg[] args,
+      [MarshalAs(UnmanagedType.SysUInt)]
       [In] UIntPtr nargs);
+
+    public static void Debug(Type obj, String format, params Object[] args) 
+    {
+      ayxia_tc_type_trace(obj.GetType().FullName, String.Format(format, args));
+    }
+
+    public static void Debug(object obj, String format, params Object[] args)
+    {
+      var type = obj.GetType();
+      String.Format(format, args);
+
+    }
+
 
     public static void Debug(ref ayxia_trace_channel channel, params Object[] args)
     {

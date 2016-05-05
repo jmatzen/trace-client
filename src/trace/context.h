@@ -3,6 +3,7 @@
 #include <trace/trace.h>
 #include <thread>
 #include <condition_variable>
+#include <unordered_map>
 #include <mutex>
 #include <vector>
 #include <string>
@@ -21,13 +22,15 @@ namespace ayxia
 
       void SendTrace(ayxia_trace_channel& channel, const ayxia_trace_arg* args, size_t nargs);
 
-      void InitChannel(const ayxia_trace_channel* channel);
+      void InitChannel(ayxia_trace_channel* channel);
 
       void Initialize();
 
       void EndFrameMarker();
 
       void SetThreadName(const char* name);
+
+      void TypeTrace(const char* typestr, const char* message);
 
     private:
 
@@ -68,7 +71,9 @@ namespace ayxia
       std::unique_ptr<uv_tcp_t> m_uvStream;
       uint64_t m_timestampBaseTime;
       
-      std::string m_remoteAddress;
+      std::string m_remoteHost;
+
+      std::unordered_map<size_t, uint32_t> m_typeToChannelMap;
     };
   }
 }
