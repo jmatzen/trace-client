@@ -8,46 +8,52 @@ using System.Threading.Tasks;
 namespace Ayxia.Trace
 {
 
-  public enum ArgType
+  public enum Level
   {
-    Int8,
-    UInt8,
-    Int16,
-    UInt16,
-    Int32,
-    UInt32,
-    Int64,
-    UInt64,
-    Float32,
-    Float64,
-    String,
-    WString
+    Info,
+    Warning,
+    Error,
   }
 
-  public enum Command
-  {
-    Initialize,
-    InitChannel,
-    Trace,
-    EndFrame,
-    ThreadName
-  }
+  //public enum ArgType
+  //{
+  //  Int8,
+  //  UInt8,
+  //  Int16,
+  //  UInt16,
+  //  Int32,
+  //  UInt32,
+  //  Int64,
+  //  UInt64,
+  //  Float32,
+  //  Float64,
+  //  String,
+  //  WString
+  //}
 
-  [StructLayout(LayoutKind.Sequential)]
-  public struct ayxia_trace_arg
-  {
-    [MarshalAs(UnmanagedType.LPStr)]
-    public string value;
+  //public enum Command
+  //{
+  //  Initialize,
+  //  InitChannel,
+  //  Trace,
+  //  EndFrame,
+  //  ThreadName
+  //}
 
-    [MarshalAs(UnmanagedType.I4)]
-    public ArgType type;
-  }
+  //[StructLayout(LayoutKind.Sequential)]
+  //public struct ayxia_trace_arg
+  //{
+  //  [MarshalAs(UnmanagedType.LPStr)]
+  //  public string value;
+
+  //  [MarshalAs(UnmanagedType.I4)]
+  //  public ArgType type;
+  //}
 
 	[Flags]
 	public enum InitializationFlags
 	{
 		None = 0,
-		AllowDroppedFrames = 1,
 	}
 
   [StructLayout(LayoutKind.Sequential)]
@@ -62,37 +68,37 @@ namespace Ayxia.Trace
 		public InitializationFlags Flags;
   }
 
-  [StructLayout(LayoutKind.Sequential)]
-  public struct ayxia_trace_channel
-  {
-    private UInt32 Bits;
-    public UInt32 Cookie;
-    [MarshalAs(UnmanagedType.LPStr)]
-    public string Channel;
-    [MarshalAs(UnmanagedType.LPStr)]
-    public string File;
-    [MarshalAs(UnmanagedType.LPStr)]
-    public string Func;
-    [MarshalAs(UnmanagedType.LPStr)]
-    public string Format;
+  //[StructLayout(LayoutKind.Sequential)]
+  //public struct ayxia_trace_channel
+  //{
+  //  private UInt32 Bits;
+  //  public UInt32 Cookie;
+  //  [MarshalAs(UnmanagedType.LPStr)]
+  //  public string Channel;
+  //  [MarshalAs(UnmanagedType.LPStr)]
+  //  public string File;
+  //  [MarshalAs(UnmanagedType.LPStr)]
+  //  public string Func;
+  //  [MarshalAs(UnmanagedType.LPStr)]
+  //  public string Format;
 
-    public int Level
-    {
-      get { return (int)(Bits & 0xff); }
-      set { Bits = (uint)(Bits & ~0xff) | ((uint)value & 0xff); }
-    }
+  //  public int Level
+  //  {
+  //    get { return (int)(Bits & 0xff); }
+  //    set { Bits = (uint)(Bits & ~0xff) | ((uint)value & 0xff); }
+  //  }
 
-    public uint LineNo
-    {
-      get { return (Bits & 0xefffff00) >> 8; }
-      set { Bits = (Bits & 0x800000ff) | (value << 8); }
-    }
+  //  public uint LineNo
+  //  {
+  //    get { return (Bits & 0xefffff00) >> 8; }
+  //    set { Bits = (Bits & 0x800000ff) | (value << 8); }
+  //  }
 
-    public bool Disabled
-    {
-      get { return (Bits & (1 << 31)) != 0; }
-    }
-  }
+  //  public bool Disabled
+  //  {
+  //    get { return (Bits & (1 << 31)) != 0; }
+  //  }
+  //}
 
   public class Trace
   {
@@ -103,48 +109,36 @@ namespace Ayxia.Trace
     [DllImport("ayxiatrace.dll")]
     public static extern void ayxia_tc_shutdown();
 
-    [DllImport("ayxiatrace.dll")]
-    public static extern void ayxia_tc_init_channel(
-      [In,Out] ref ayxia_trace_channel channel);
+    //[DllImport("ayxiatrace.dll")]
+    //public static extern void ayxia_tc_init_channel(
+    //  [In,Out] ref ayxia_trace_channel channel);
 
     [DllImport("ayxiatrace.dll")]
-    public static extern void ayxia_tc_type_trace(
+    public static extern void ayxia_tc_simple_trace(
+      [MarshalAs(UnmanagedType.I4)]
+      [In] Level level,
       [MarshalAs(UnmanagedType.LPStr)]
-      [In] string type, 
+      [In] string channel, 
       [MarshalAs(UnmanagedType.LPStr)]
 			[In] string message);
 
-    [DllImport("ayxiatrace.dll")]
-    public static extern void ayxia_tc_trace(
-      [In] ref ayxia_trace_channel channel,
-      [MarshalAs(UnmanagedType.LPArray)]
-      [In] ayxia_trace_arg[] args,
-      [MarshalAs(UnmanagedType.SysUInt)]
-      [In] UIntPtr nargs);
+    //[DllImport("ayxiatrace.dll")]
+    //public static extern void ayxia_tc_trace(
+    //  [In] ref ayxia_trace_channel channel,
+    //  [MarshalAs(UnmanagedType.LPArray)]
+    //  [In] ayxia_trace_arg[] args,
+    //  [MarshalAs(UnmanagedType.SysUInt)]
+    //  [In] UIntPtr nargs);
 
-    public static void Debug(Type obj, String format, params Object[] args) 
+    public static void Message(Type obj, Level level, String format, params Object[] args) 
     {
-      ayxia_tc_type_trace(obj.FullName, String.Format(format, args));
+      ayxia_tc_simple_trace(level, obj.FullName, String.Format(format, args));
     }
 
-    public static void Debug(object obj, String format, params Object[] args)
+    public static void Message(object obj, Level level, String format, params Object[] args)
     {
-			Debug(obj.GetType(), format, args);
+      Message(obj.GetType(), level, format, args);
     }
-
-
-    //public static void Debug(ref ayxia_trace_channel channel, params Object[] args)
-    //{
-    //  var traceargs = new ayxia_trace_arg[args.Length];
-    //  foreach (var arg in args)
-    //  {
-    //    var s = arg.ToString();
-    //    if (arg.GetType() == typeof(short))
-    //    {
-    //      short val = (short)arg;
-    //    }
-    //  }
-    //}
   }
 }
 

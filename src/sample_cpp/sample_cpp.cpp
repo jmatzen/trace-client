@@ -21,12 +21,12 @@ struct InitAllocHook
 
 int main()
 {
-  auto init = TraceInitialize("localhost", "", 1024 * 1024, false);
+  auto init = TraceInitialize("localhost", "", 1024 * 1024);
   ayxia_tc_initialize(&init);
   
   for (int i = 0; i < 100; ++i)
   {
-    TRACE_INFO("test", "this is a test {0} {1} {2,16:4} {3:4} {4} 0x{0:x}", i, "test", float(i), double(i));
+    TRACE_INFO("this.is.a.test", "this is a test {0} {1} {2,16:4} {3:4} {4} 0x{0:x}", i, "test", float(i), double(i));
   }
   ayxia_tc_shutdown();
 }

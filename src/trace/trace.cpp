@@ -2,6 +2,7 @@
 #include <memory>
 #include <mutex>
 #include <cstdio>
+#include <utility>
 #include "context.h"
 
 namespace
@@ -34,6 +35,13 @@ TRACE_CLIENT_EXPORT void ayxia_tc_trace_varargs(
   ayxia_trace_channel* channel, 
   const char* format, ...)
 {
+  if (!channel->cookie) {
+    std::unique_lock<std::mutex> lk(s_mutex);
+    if (!channel->cookie) {
+      channel->cookie = uint32_t(std::hash<intptr_t>()(intptr_t(&channel)));
+      ayxia_tc_init_channel(channel);
+    }
+  }
   va_list lst;
   va_start(lst, format);
   char buffer[1024];
@@ -60,8 +68,11 @@ TRACE_CLIENT_EXPORT void ayxia_tc_thread_name(const char * name)
   s_context->SetThreadName(name);
 }
 
-TRACE_CLIENT_EXPORT void ayxia_tc_type_trace(const char* typestr, const char* message)
+TRACE_CLIENT_EXPORT void ayxia_tc_simple_trace(
+  ayxia_trace_level level, 
+  const char* channel, 
+  const char* message)
 {
-  s_context->TypeTrace(typestr, message);
+  s_context->SendTrace(level, channel, message);
 }
 

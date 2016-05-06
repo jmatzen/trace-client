@@ -9,13 +9,16 @@ namespace TestAyxiaDotNet
 {
   public class Class1
   {
+    static Random _random = new Random();
+
 		void Run()
 		{
 			foreach (var i in Enumerable.Range(0, 100))
 			{
-				Trace.Debug(this, "format {0:X}", i);
+				Trace.Message(this, (Level)(_random.Next()%3), "format {0:X}", i);
 			}
 		}
+
 		public static void Main(string[] args)
     {
       var init = new ayxia_trace_initialize();

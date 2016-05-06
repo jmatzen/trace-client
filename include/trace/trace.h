@@ -18,17 +18,12 @@
 extern "C" {
 #endif
 
-  typedef struct ayxia_trace_channel_
+  enum ayxia_trace_level
   {
-    uint32_t level : 8;
-    uint32_t lineno : 23;
-    uint32_t channel_disable : 1; // out parameter
-    uint32_t cookie; // out parameter
-    const char* channel;
-    const char* file;
-    const char* func;
-    const char* format;
-  } ayxia_trace_channel;
+    atl_info = 0,
+    atl_warning = 1,
+    atl_error = 2,
+  };
 
   enum ayxia_trace_type
   {
@@ -55,17 +50,29 @@ extern "C" {
     atc_thread_name,
   };
 
+  enum initialization_flags
+  {
+    aif_none = 0,
+  };
+
+  typedef struct ayxia_trace_channel_
+  {
+    uint32_t level : 8;
+    uint32_t lineno : 23;
+    uint32_t channel_disable : 1; // out parameter
+    uint32_t cookie; // out parameter
+    const char* channel;
+    const char* file;
+    const char* func;
+    const char* format;
+  } ayxia_trace_channel;
+
+
   typedef struct ayxia_trace_arg_
   {
     const void* parg;
     enum ayxia_trace_type type;
   } ayxia_trace_arg;
-
-  typedef enum initialization_flags_
-  {
-    aif_none = 0,
-    aif_allow_dropped_frames = 0x1,
-  } initialization_flags;
 
   typedef struct ayxia_trace_initialize_
   {
@@ -81,15 +88,12 @@ extern "C" {
   public:
     TraceInitialize(const char *RemoteHost,
       const char* ProcessNme,
-      size_t MaxNetworkMemoryKb,
-      bool AllowDroppedFrames)
+      uint32_t MaxNetworkMemoryKb)
     {
       remote_host = RemoteHost;
       process_name = ProcessNme;
       max_network_memory_kb = MaxNetworkMemoryKb;
       flags = aif_none;
-      if (AllowDroppedFrames)
-        flags |= aif_allow_dropped_frames;
     }
   };
 #endif
@@ -115,7 +119,10 @@ extern "C" {
 
   TRACE_CLIENT_EXPORT void ayxia_tc_thread_name(const char * name);
 
-  TRACE_CLIENT_EXPORT void ayxia_tc_type_trace(const char* typestr, const char* message);
+  TRACE_CLIENT_EXPORT void ayxia_tc_simple_trace(
+    enum ayxia_trace_level level, 
+    const char* channel, 
+    const char* message);
 
 #if defined(__cplusplus)
 }

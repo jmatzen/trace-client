@@ -79,10 +79,10 @@ namespace
 }
 
 
-void ayxia::trace::Context::SendTrace(ayxia_trace_channel& channel, const ayxia_trace_arg* args, size_t nargs)
+void ayxia::trace::Context::SendTrace(const ayxia_trace_channel& channel, const ayxia_trace_arg* args, size_t nargs)
 {
   if (!m_loggingEnabled) {
-    channel.channel_disable = 1;
+    const_cast<ayxia_trace_channel&>(channel).channel_disable = 1;
     return;
   }
   
@@ -94,9 +94,13 @@ void ayxia::trace::Context::SendTrace(ayxia_trace_channel& channel, const ayxia_
 #endif
   }
 
+
   std::array<char, 4096> buf;
   auto ptr = buf.data();
-  ptr = write_buffer(ptr, uint64_t(channel.cookie));
+  if (channel.cookie)
+    ptr = write_buffer(ptr, uint64_t(channel.cookie));
+  else
+    ptr = write_buffer(ptr, uint64_t(&channel));
   ptr = write_buffer(ptr, GetTimestamp());
   ptr = write_buffer(ptr, s_threadid);
   ptr = write_buffer(ptr, uint8_t(nargs));
@@ -118,8 +122,8 @@ void ayxia::trace::Context::SendTrace(ayxia_trace_channel& channel, const ayxia_
     default: abort();
     }
   }
-  
-  SendToLogger(atc_trace, buf.data(), ptr-buf.data());
+
+  SendToLogger(atc_trace, buf.data(), ptr - buf.data());
 }
 
 void ayxia::trace::Context::InitChannel(ayxia_trace_channel * channel)
@@ -128,13 +132,6 @@ void ayxia::trace::Context::InitChannel(ayxia_trace_channel * channel)
   if (!m_loggingEnabled)
     return;
 
-  if (channel->cookie == 0)
-  {
-    std::unique_lock<std::mutex> lk(m_mutex);
-    if (channel->cookie == 0)
-      channel->cookie = nextChannelId++;
-  }
-
   // fix up the source file name
   const char* delim = strrchr(channel->file, '\\');
   if (!delim)
@@ -142,17 +139,19 @@ void ayxia::trace::Context::InitChannel(ayxia_trace_channel * channel)
   if (delim)
     channel->file = ++delim;
 
-
   std::array<char, 4096> buf;
   auto p = buf.data();
-  p = write_buffer(p, uint64_t(channel->cookie));
+  if (channel->cookie)
+    p = write_buffer(p, uint64_t(channel->cookie));
+  else
+    p = write_buffer(p, uint64_t(channel));
   p = write_buffer(p, uint8_t(channel->level));
   p = write_buffer(p, uint16_t(channel->lineno));
   p = write_buffer(p, channel->channel);
   p = write_buffer(p, channel->file);
   p = write_buffer(p, channel->func);
   p = write_buffer(p, channel->format);
-  SendToLogger(atc_init_channel, buf.data(),p-buf.data());
+  SendToLogger(atc_init_channel, buf.data(), p - buf.data());
 }
 
 void ayxia::trace::Context::Initialize()
@@ -178,28 +177,25 @@ void ayxia::trace::Context::SetThreadName(const char * name)
   SendToLogger(atc_thread_name, p, q - p);
 }
 
-void ayxia::trace::Context::TypeTrace(const char * typestr, const char * message)
+void ayxia::trace::Context::SendTrace(
+  ayxia_trace_level level,
+  const char * channelName,
+  const char * message)
 {
-  auto typestrhash = std::hash<const char*>()(typestr);
   auto channel = ayxia_trace_channel();
-  channel.channel = typestr;
+  channel.channel = channelName;
+  channel.level = level;
   channel.file = "";
   channel.func = "";
   channel.format = "{0}";
+  channel.cookie = uint32_t(std::hash<const char*>()(channelName));
+  channel.cookie ^= uint32_t(std::hash<int>()(level));
   {
-    std::unique_lock<std::mutex> lk(m_mutex);
-    auto it = m_typeToChannelMap.find(typestrhash);
-    if (it == m_typeToChannelMap.end())
-    {
-      lk.unlock();
-      InitChannel(&channel);
-      lk.lock();
-      it = m_typeToChannelMap.insert(std::make_pair(typestrhash, channel.cookie)).first;
-    }
-    else
-    {
-      channel.cookie = it->second;
-    }
+      std::unique_lock<std::mutex> lk(m_channelSetMutex);
+      if (m_channelSet.insert(channel.cookie).second)
+      {
+        InitChannel(&channel);
+      }
   }
   ayxia_trace_arg arg = {
     message, att_string
