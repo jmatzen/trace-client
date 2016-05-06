@@ -182,9 +182,9 @@ void ayxia::trace::Context::TypeTrace(const char * typestr, const char * message
 {
   auto typestrhash = std::hash<const char*>()(typestr);
   auto channel = ayxia_trace_channel();
-  channel.channel = "test";
+  channel.channel = typestr;
   channel.file = "";
-  channel.func = typestr;
+  channel.func = "";
   channel.format = "{0}";
   {
     std::unique_lock<std::mutex> lk(m_mutex);

@@ -9,16 +9,21 @@ namespace TestAyxiaDotNet
 {
   public class Class1
   {
-    public static void Main(string[] args)
+		void Run()
+		{
+			foreach (var i in Enumerable.Range(0, 100))
+			{
+				Trace.Debug(this, "format {0:X}", i);
+			}
+		}
+		public static void Main(string[] args)
     {
       var init = new ayxia_trace_initialize();
       init.RemoteHost = "localhost";
       init.ProcessName = "TestAyxiaDotNet";
       Trace.ayxia_tc_initialize(ref init);
-
-      Trace.Debug(typeof(Class1), "format {0}", 3);
-
-      Trace.ayxia_tc_shutdown();
+			new Class1().Run();
+			Trace.ayxia_tc_shutdown();
     }
   }
 }

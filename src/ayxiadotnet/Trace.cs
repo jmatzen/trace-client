@@ -102,9 +102,9 @@ namespace Ayxia.Trace
     [DllImport("ayxiatrace.dll")]
     public static extern void ayxia_tc_type_trace(
       [MarshalAs(UnmanagedType.LPStr)]
-      string type, 
+      [In] string type, 
       [MarshalAs(UnmanagedType.LPStr)]
-      string message);
+			[In] string message);
 
     [DllImport("ayxiatrace.dll")]
     public static extern void ayxia_tc_trace(
@@ -121,25 +121,22 @@ namespace Ayxia.Trace
 
     public static void Debug(object obj, String format, params Object[] args)
     {
-      var type = obj.GetType();
-      String.Format(format, args);
-
+			Debug(obj.GetType(), format, args);
     }
 
 
-    public static void Debug(ref ayxia_trace_channel channel, params Object[] args)
-    {
-      var traceargs = new ayxia_trace_arg[args.Length];
-      int i = 0;
-      foreach (var arg in args)
-      {
-        var s = arg.ToString();
-        if (arg.GetType() == typeof(short))
-        {
-          short val = (short)arg;
-        }
-      }
-    }
+    //public static void Debug(ref ayxia_trace_channel channel, params Object[] args)
+    //{
+    //  var traceargs = new ayxia_trace_arg[args.Length];
+    //  foreach (var arg in args)
+    //  {
+    //    var s = arg.ToString();
+    //    if (arg.GetType() == typeof(short))
+    //    {
+    //      short val = (short)arg;
+    //    }
+    //  }
+    //}
   }
 }
 
