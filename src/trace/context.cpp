@@ -20,8 +20,6 @@
 
 namespace
 {
-  std::atomic<unsigned> nextChannelId(1U);
-
   const size_t kBufferSize = 65536;
 
 #if defined _WIN32
@@ -126,31 +124,31 @@ void ayxia::trace::Context::SendTrace(const ayxia_trace_channel& channel, const 
   SendToLogger(atc_trace, buf.data(), ptr - buf.data());
 }
 
-void ayxia::trace::Context::InitChannel(ayxia_trace_channel * channel)
+void ayxia::trace::Context::InitChannel(ayxia_trace_channel& channel)
 {
 
   if (!m_loggingEnabled)
     return;
 
   // fix up the source file name
-  const char* delim = strrchr(channel->file, '\\');
+  const char* delim = strrchr(channel.file, '\\');
   if (!delim)
-    delim = strrchr(channel->file, '/');
+    delim = strrchr(channel.file, '/');
   if (delim)
-    channel->file = ++delim;
+    channel.file = ++delim;
 
   std::array<char, 4096> buf;
   auto p = buf.data();
-  if (channel->cookie)
-    p = write_buffer(p, uint64_t(channel->cookie));
+  if (channel.cookie)
+    p = write_buffer(p, uint64_t(channel.cookie));
   else
-    p = write_buffer(p, uint64_t(channel));
-  p = write_buffer(p, uint8_t(channel->level));
-  p = write_buffer(p, uint16_t(channel->lineno));
-  p = write_buffer(p, channel->channel);
-  p = write_buffer(p, channel->file);
-  p = write_buffer(p, channel->func);
-  p = write_buffer(p, channel->format);
+    p = write_buffer(p, uint64_t(&channel));
+  p = write_buffer(p, uint8_t(channel.level));
+  p = write_buffer(p, uint16_t(channel.lineno));
+  p = write_buffer(p, channel.channel);
+  p = write_buffer(p, channel.file);
+  p = write_buffer(p, channel.func);
+  p = write_buffer(p, channel.format);
   SendToLogger(atc_init_channel, buf.data(), p - buf.data());
 }
 
@@ -194,7 +192,7 @@ void ayxia::trace::Context::SendTrace(
       std::unique_lock<std::mutex> lk(m_channelSetMutex);
       if (m_channelSet.insert(channel.cookie).second)
       {
-        InitChannel(&channel);
+        InitChannel(channel);
       }
   }
   ayxia_trace_arg arg = {

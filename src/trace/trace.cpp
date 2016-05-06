@@ -55,7 +55,7 @@ TRACE_CLIENT_EXPORT void ayxia_tc_trace_varargs(
 
 TRACE_CLIENT_EXPORT void ayxia_tc_init_channel(ayxia_trace_channel* channel)
 {
-  s_context->InitChannel(channel);
+  s_context->InitChannel(*channel);
 }
 
 TRACE_CLIENT_EXPORT void ayxia_tc_end_frame_marker()

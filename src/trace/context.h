@@ -22,7 +22,7 @@ namespace ayxia
 
       void SendTrace(const ayxia_trace_channel& channel, const ayxia_trace_arg* args, size_t nargs);
 
-      void InitChannel(ayxia_trace_channel* channel);
+      void InitChannel(ayxia_trace_channel& channel);
 
       void Initialize();
 
