@@ -63,7 +63,8 @@ extern "C" {
 
   typedef enum initialization_flags_
   {
-    TRACE_INIT_FLAGS_ALLOW_DROPPED_FRAMES
+    aif_none = 0,
+    aif_allow_dropped_frames = 0x1,
   } initialization_flags;
 
   typedef struct ayxia_trace_initialize_
@@ -86,6 +87,9 @@ extern "C" {
       remote_host = RemoteHost;
       process_name = ProcessNme;
       max_network_memory_kb = MaxNetworkMemoryKb;
+      flags = aif_none;
+      if (AllowDroppedFrames)
+        flags |= aif_allow_dropped_frames;
     }
   };
 #endif

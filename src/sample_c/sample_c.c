@@ -4,9 +4,10 @@ int main()
 {
   ayxia_trace_initialize init =
   {
+    .remote_host = "localhost",
     .process_name = "sample_c",
     .max_network_memory_kb = 1024 * 1024,
-    .flags = TRACE_INIT_FLAGS_ALLOW_DROPPED_FRAMES,
+    .flags = aif_none,
   };
 
   ayxia_tc_initialize(&init);
