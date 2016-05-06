@@ -21,6 +21,8 @@ namespace TestAyxiaDotNet
       var init = new ayxia_trace_initialize();
       init.RemoteHost = "localhost";
       init.ProcessName = "TestAyxiaDotNet";
+			init.MaxNetworkMemoryKB = 1024 * 1024;
+			init.Flags = InitializationFlags.None;
       Trace.ayxia_tc_initialize(ref init);
 			new Class1().Run();
 			Trace.ayxia_tc_shutdown();

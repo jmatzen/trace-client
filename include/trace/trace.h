@@ -61,12 +61,17 @@ extern "C" {
     enum ayxia_trace_type type;
   } ayxia_trace_arg;
 
+  typedef enum initialization_flags_
+  {
+    TRACE_INIT_FLAGS_ALLOW_DROPPED_FRAMES
+  } initialization_flags;
+
   typedef struct ayxia_trace_initialize_
   {
     const char* remote_host;
     const char* process_name;
-    size_t max_network_memory_kb;
-    int allow_dropped_frames;
+    uint32_t max_network_memory_kb;
+    int flags;
   } ayxia_trace_initialize;
 
 #if defined (__cplusplus)
@@ -81,7 +86,6 @@ extern "C" {
       remote_host = RemoteHost;
       process_name = ProcessNme;
       max_network_memory_kb = MaxNetworkMemoryKb;
-      allow_dropped_frames = AllowDroppedFrames ? 1 : 0;
     }
   };
 #endif

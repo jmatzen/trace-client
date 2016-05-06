@@ -43,6 +43,13 @@ namespace Ayxia.Trace
     public ArgType type;
   }
 
+	[Flags]
+	public enum InitializationFlags
+	{
+		None = 0,
+		AllowDroppedFrames = 1,
+	}
+
   [StructLayout(LayoutKind.Sequential)]
   public struct ayxia_trace_initialize
   {
@@ -50,8 +57,9 @@ namespace Ayxia.Trace
     public string RemoteHost;
     [MarshalAs(UnmanagedType.LPStr)]
     public string ProcessName;
-    public IntPtr MaxNetworkMemoryKB;
-    public Int32 AllowDroppedFrames;
+    public Int32 MaxNetworkMemoryKB;
+		[MarshalAs(UnmanagedType.I4)]
+		public InitializationFlags Flags;
   }
 
   [StructLayout(LayoutKind.Sequential)]

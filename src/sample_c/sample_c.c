@@ -6,7 +6,7 @@ int main()
   {
     .process_name = "sample_c",
     .max_network_memory_kb = 1024 * 1024,
-    .allow_dropped_frames = 0,
+    .flags = TRACE_INIT_FLAGS_ALLOW_DROPPED_FRAMES,
   };
 
   ayxia_tc_initialize(&init);
