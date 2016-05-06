@@ -352,12 +352,9 @@ ayxia::trace::Context::TimestampT ayxia::trace::Context::GetTimestamp()
 #if defined _WIN32
   LARGE_INTEGER counter;
   QueryPerformanceCounter(&counter);
-  uint64_t timestamp = uint64_t(counter.HighPart) << 32 | counter.LowPart;
-  timestamp -= m_timestampBaseTime;
-  LARGE_INTEGER freq_;
-  QueryPerformanceFrequency(&freq_);
-  uint64_t freq = uint64_t(freq_.HighPart) << 32 | freq_.LowPart;
-  return timestamp / 10;
+  uint64_t timestamp = counter.QuadPart - m_timestampBaseTime;
+  timestamp = (timestamp * 1000000) / m_highResTimerFrequency;
+  return timestamp;
 #else
   return 0;
 #endif
@@ -490,6 +487,10 @@ ayxia::trace::Context::Context(const ayxia_trace_initialize& init)
 #if defined _WIN32
   LARGE_INTEGER counter;
   QueryPerformanceCounter(&counter);
-  m_timestampBaseTime = uint64_t(counter.HighPart) << 32 | counter.LowPart;
+  m_timestampBaseTime = counter.QuadPart;
+
+  LARGE_INTEGER freq;
+  QueryPerformanceFrequency(&freq);
+  m_highResTimerFrequency = freq.QuadPart;
 #endif
 }
