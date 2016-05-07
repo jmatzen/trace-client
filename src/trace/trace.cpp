@@ -58,9 +58,9 @@ TRACE_CLIENT_EXPORT void ayxia_tc_init_channel(ayxia_trace_channel* channel)
   s_context->InitChannel(*channel);
 }
 
-TRACE_CLIENT_EXPORT void ayxia_tc_end_frame_marker()
+TRACE_CLIENT_EXPORT void ayxia_tc_start_frame()
 {
-  s_context->EndFrameMarker();
+  s_context->StartFrame();
 }
 
 TRACE_CLIENT_EXPORT void ayxia_tc_thread_name(const char * name)

@@ -46,7 +46,7 @@ extern "C" {
     atc_initialize,
     atc_init_channel,
     atc_trace,
-    atc_end_frame,
+    atc_start_frame,
     atc_thread_name,
   };
 
@@ -67,6 +67,10 @@ extern "C" {
     const char* format;
   } ayxia_trace_channel;
 
+  typedef struct ayxia_trace_context_
+  {
+    const char* name;
+  } ayxia_trace_context;
 
   typedef struct ayxia_trace_arg_
   {
@@ -115,7 +119,7 @@ extern "C" {
 
   TRACE_CLIENT_EXPORT void ayxia_tc_init_channel(ayxia_trace_channel* channel);
 
-  TRACE_CLIENT_EXPORT void ayxia_tc_end_frame_marker();
+  TRACE_CLIENT_EXPORT void ayxia_tc_start_frame();
 
   TRACE_CLIENT_EXPORT void ayxia_tc_thread_name(const char * name);
 
@@ -123,6 +127,10 @@ extern "C" {
     enum ayxia_trace_level level, 
     const char* channel, 
     const char* message);
+
+  TRACE_CLIENT_EXPORT void ayxia_tc_enter_context(const ayxia_trace_context* context);
+
+  TRACE_CLIENT_EXPORT void ayxia_tc_leave_context();
 
 #if defined(__cplusplus)
 }
@@ -147,6 +155,18 @@ namespace ayxia
     template<typename T, int N>
     struct argtype<T[N]> {
       static const ayxia_trace_type value = argtype<const T*>::value;
+    };
+
+    class TraceContext
+    {
+    public:
+      TraceContext(const char* name)
+      {
+        _context.name = name;
+        //ayxia_tc_init_context(&_context);
+      }
+    private:
+      ayxia_trace_context _context;
     };
 
     class Trace

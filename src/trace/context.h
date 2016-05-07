@@ -26,7 +26,7 @@ namespace ayxia
 
       void Initialize();
 
-      void EndFrameMarker();
+      void StartFrame();
 
       void SetThreadName(const char* name);
 
@@ -76,6 +76,7 @@ namespace ayxia
       uint64_t m_highResTimerFrequency;
       
       std::string m_remoteHost;
+      std::string m_processName;
 
       std::unordered_set<uint32_t> m_channelSet;
       std::mutex m_channelSetMutex;

@@ -9,7 +9,8 @@
 
 #if defined _DEBUG
 #  include <iostream>
-#  define DEBUG_LOG(s) do { std::cerr << s << std::endl; } while(0);
+//#  define DEBUG_LOG(s) do { std::cerr << s << std::endl; } while(0);
+#  define DEBUG_LOG(s)
 #else
 #  define DEBUG_LOG(s)
 #endif
@@ -154,16 +155,22 @@ void ayxia::trace::Context::InitChannel(ayxia_trace_channel& channel)
 
 void ayxia::trace::Context::Initialize()
 {
-  std::unique_lock<std::mutex> lk(m_mutex);
-  m_thread = std::thread(std::bind(&Context::ThreadEntryPoint, this));
-  DEBUG_LOG("waiting for thread creation to complete.");
-  m_condvar.wait(lk);
+  {
+    std::unique_lock<std::mutex> lk(m_mutex);
+    m_thread = std::thread(std::bind(&Context::ThreadEntryPoint, this));
+    DEBUG_LOG("waiting for thread creation to complete.");
+    m_condvar.wait(lk);
+  }
+  std::array<char, 1024> buf;
+  auto p = buf.data();
+  p = write_buffer(p, m_processName.c_str());
+  SendToLogger(atc_initialize, buf.data(), p - buf.data());
 }
 
-void ayxia::trace::Context::EndFrameMarker()
+void ayxia::trace::Context::StartFrame()
 {
   TimestampT ts = GetTimestamp();
-  SendToLogger(atc_end_frame, (char*)&ts, sizeof(TimestampT));
+  SendToLogger(atc_start_frame, (char*)&ts, sizeof(TimestampT));
 }
 
 void ayxia::trace::Context::SetThreadName(const char * name)
@@ -347,7 +354,7 @@ ayxia::trace::Context::TimestampT ayxia::trace::Context::GetTimestamp()
   LARGE_INTEGER counter;
   QueryPerformanceCounter(&counter);
   uint64_t timestamp = counter.QuadPart - m_timestampBaseTime;
-  timestamp = (timestamp * 1000000) / m_highResTimerFrequency;
+  timestamp = (timestamp * 1000000000) / m_highResTimerFrequency;
   return timestamp;
 #else
   return 0;
@@ -411,9 +418,10 @@ void ayxia::trace::Context::Flush()
       (uv_stream_t*)m_uvStream.get(), 
       static_cast<uv_buf_t*>(ctx), 
       1,
-      [](uv_write_t* req, int /*status*/)
+      [](uv_write_t* req, int status)
     {
       auto ctx = static_cast<write_ctx*>(req);
+      DEBUG_LOG("[status="<<status<<"] deleting " << ctx->len << " bytes");
       delete[](char*)ctx->base;
       delete ctx;
     });
@@ -468,14 +476,18 @@ ayxia::trace::Context::~Context()
   }
 
   uv_loop_close(&m_uvLoop);
+
+  DEBUG_LOG("done.");
 }
 
 ayxia::trace::Context::Context(const ayxia_trace_initialize& init)
   : m_loggingEnabled(false)
   , m_uvLoop()
-  , m_remoteHost(init.remote_host?init.remote_host :"localhost")
+  , m_remoteHost(init.remote_host ? init.remote_host : "localhost")
+  , m_processName(init.process_name ? init.process_name : "")
+  , m_timestampBaseTime()
+  , m_highResTimerFrequency()
 {
-
   m_buffer.reserve(kBufferSize);
 
 #if defined _WIN32
