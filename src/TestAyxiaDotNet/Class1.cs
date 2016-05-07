@@ -15,6 +15,7 @@ namespace TestAyxiaDotNet
 		{
 			foreach (var i in Enumerable.Range(0, 100))
 			{
+                Trace.ayxia_tc_start_frame();
 				Trace.Message(this, (Level)(_random.Next()%3), "format {0:X}", i);
 			}
 		}
