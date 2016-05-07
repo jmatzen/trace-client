@@ -257,6 +257,5 @@ namespace ayxia
     if (!AYX_TRACE_UNIQ(ayx_trace_, __LINE__).channel_disable) \
       ayxia_tc_trace_varargs(&AYX_TRACE_UNIQ(ayx_trace_, __LINE__), f, __VA_ARGS__); \
 }
-//    static int q = ayxia_tc_init_channel(&AYX_TRACE_UNIQ(ayx_trace_, __LINE__)), 0; \
 
 #endif // __cplusplus

@@ -7,6 +7,7 @@
 #include <mutex>
 #include <vector>
 #include <string>
+#include <chrono>
 #include <uv.h>
 
 namespace ayxia
@@ -72,8 +73,13 @@ namespace ayxia
       uv_async_t m_uvSignal;
       uv_timer_t m_uvTimer;
       std::unique_ptr<uv_tcp_t> m_uvStream;
+#if defined _WIN32
       uint64_t m_timestampBaseTime;
       uint64_t m_highResTimerFrequency;
+#else
+      std::chrono::time_point<std::chrono::high_resolution_clock>
+      m_timestampBaseTime;
+#endif
       
       std::string m_remoteHost;
       std::string m_processName;

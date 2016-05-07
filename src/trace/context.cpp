@@ -357,7 +357,9 @@ ayxia::trace::Context::TimestampT ayxia::trace::Context::GetTimestamp()
   timestamp = (timestamp * 1000000000) / m_highResTimerFrequency;
   return timestamp;
 #else
-  return 0;
+  auto timespan(std::chrono::high_resolution_clock::now() - m_timestampBaseTime);
+  auto nanosecs = std::chrono::duration_cast<std::chrono::nanoseconds>(timespan);
+  return nanosecs.count();
 #endif
   
 }
@@ -485,8 +487,6 @@ ayxia::trace::Context::Context(const ayxia_trace_initialize& init)
   , m_uvLoop()
   , m_remoteHost(init.remote_host ? init.remote_host : "localhost")
   , m_processName(init.process_name ? init.process_name : "")
-  , m_timestampBaseTime()
-  , m_highResTimerFrequency()
 {
   m_buffer.reserve(kBufferSize);
 
@@ -498,5 +498,7 @@ ayxia::trace::Context::Context(const ayxia_trace_initialize& init)
   LARGE_INTEGER freq;
   QueryPerformanceFrequency(&freq);
   m_highResTimerFrequency = freq.QuadPart;
+#else
+  m_timestampBaseTime = std::chrono::high_resolution_clock::now();
 #endif
 }
