@@ -34,14 +34,14 @@ namespace Ayxia.Trace
 	public class Trace
 	{
 		[DllImport("ayxiatrace.dll")]
-		public static extern void ayxia_tc_initialize(
+    private static extern void ayxia_tc_initialize(
 		[In] ref ayxia_trace_initialize init);
 
 		[DllImport("ayxiatrace.dll")]
-		public static extern void ayxia_tc_shutdown();
+		private static extern void ayxia_tc_shutdown();
 
 		[DllImport("ayxiatrace.dll")]
-		public static extern void ayxia_tc_simple_trace(
+    private static extern void ayxia_tc_simple_trace(
 		[MarshalAs(UnmanagedType.I4)]
 [In] Level level,
 		[MarshalAs(UnmanagedType.LPStr)]
@@ -51,7 +51,22 @@ namespace Ayxia.Trace
 
 
 		[DllImport("ayxiatrace.dll")]
-		public static extern void ayxia_tc_start_frame();
+		private static extern void ayxia_tc_start_frame();
+
+    public static void Shutdown()
+    {
+      ayxia_tc_shutdown();
+    }
+
+    public static void Initialize(ayxia_trace_initialize init)
+    {
+      ayxia_tc_initialize(ref init);
+    }
+
+    public static void StartFrame()
+    {
+      ayxia_tc_start_frame();
+    }
 
 		public static void Message(Type obj, Level level, String format, params Object[] args)
 		{
