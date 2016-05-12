@@ -246,7 +246,15 @@ namespace ayxia
 
 
 #define TRACE_INFO(channel, format, ...)  { \
-  static ayxia::trace::Trace AYX_TRACE_UNIQ(ayx_trace_, __LINE__)(0, channel, __FILE__, __FUNCTION__, __LINE__, format); \
+  static ayxia::trace::Trace AYX_TRACE_UNIQ(ayx_trace_, __LINE__)(atl_info, channel, __FILE__, __FUNCTION__, __LINE__, format); \
+  AYX_TRACE_UNIQ(ayx_trace_, __LINE__)(__VA_ARGS__); }
+
+#define TRACE_ERROR(channel, format, ...)  { \
+  static ayxia::trace::Trace AYX_TRACE_UNIQ(ayx_trace_, __LINE__)(atl_error, channel, __FILE__, __FUNCTION__, __LINE__, format); \
+  AYX_TRACE_UNIQ(ayx_trace_, __LINE__)(__VA_ARGS__); }
+
+#define TRACE_WARNING(channel, format, ...)  { \
+  static ayxia::trace::Trace AYX_TRACE_UNIQ(ayx_trace_, __LINE__)(atl_warning, channel, __FILE__, __FUNCTION__, __LINE__, format); \
   AYX_TRACE_UNIQ(ayx_trace_, __LINE__)(__VA_ARGS__); }
 
 #else
