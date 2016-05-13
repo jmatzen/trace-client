@@ -5,14 +5,11 @@
 
 #if defined (ayxiatrace_EXPORTS) && defined(_WIN32)
 #  define TRACE_CLIENT_EXPORT __declspec(dllexport)
+#  define TRACE_CLIENT_IMPORT __declspec(dllexport)
 #else
 #  define TRACE_CLIENT_EXPORT
+#  define TRACE_CLIENT_IMPORT __declspec(dllimport)
 #endif
-
-
-#define AYX_TRACE_UNIQ_(x,l) x ## l
-#define AYX_TRACE_UNIQ(x,l) AYX_TRACE_UNIQ_(x,l)
-
 
 #if defined (__cplusplus)
 extern "C" {
@@ -20,6 +17,7 @@ extern "C" {
 
   enum ayxia_trace_level
   {
+    // atl_debug = 0, // placeholder
     atl_info = 0,
     atl_warning = 1,
     atl_error = 2,
@@ -131,6 +129,8 @@ extern "C" {
   TRACE_CLIENT_EXPORT void ayxia_tc_enter_context(const ayxia_trace_context* context);
 
   TRACE_CLIENT_EXPORT void ayxia_tc_leave_context();
+
+  TRACE_CLIENT_IMPORT extern int ayxia_tc_enable;
 
 #if defined(__cplusplus)
 }
@@ -245,25 +245,25 @@ namespace ayxia
 }
 
 
-#define TRACE_INFO(channel, format, ...)  { \
-  static ayxia::trace::Trace AYX_TRACE_UNIQ(ayx_trace_, __LINE__)(atl_info, channel, __FILE__, __FUNCTION__, __LINE__, format); \
-  AYX_TRACE_UNIQ(ayx_trace_, __LINE__)(__VA_ARGS__); }
+#define TRACE_INFO(channel, format, ...)  if (ayxia_tc_enable) { \
+  static ayxia::trace::Trace channel$(atl_info, channel, __FILE__, __FUNCTION__, __LINE__, format); \
+  channel$(__VA_ARGS__); }
 
-#define TRACE_ERROR(channel, format, ...)  { \
-  static ayxia::trace::Trace AYX_TRACE_UNIQ(ayx_trace_, __LINE__)(atl_error, channel, __FILE__, __FUNCTION__, __LINE__, format); \
-  AYX_TRACE_UNIQ(ayx_trace_, __LINE__)(__VA_ARGS__); }
+#define TRACE_ERROR(channel, format, ...)  if (ayxia_tc_enable) { \
+  static ayxia::trace::Trace channel$(atl_error, channel, __FILE__, __FUNCTION__, __LINE__, format); \
+  channel$(__VA_ARGS__); }
 
-#define TRACE_WARNING(channel, format, ...)  { \
-  static ayxia::trace::Trace AYX_TRACE_UNIQ(ayx_trace_, __LINE__)(atl_warning, channel, __FILE__, __FUNCTION__, __LINE__, format); \
-  AYX_TRACE_UNIQ(ayx_trace_, __LINE__)(__VA_ARGS__); }
+#define TRACE_WARNING(channel, format, ...)  if (ayxia_tc_enable) { \
+  static ayxia::trace::Trace channel$(atl_warning, channel, __FILE__, __FUNCTION__, __LINE__, format); \
+  channel$(__VA_ARGS__); }
 
 #else
 
-#define TRACE_INFO(ch, f, ...)  { \
-    static ayxia_trace_channel AYX_TRACE_UNIQ(ayx_trace_, __LINE__) = { \
+#define TRACE_INFO(ch, f, ...)  if (ayxia_tc_enable) { \
+    static ayxia_trace_channel channel$ = { \
       .level = 0,.channel = ch,.file = __FILE__,.func = __FUNCTION__,.lineno = __LINE__,.format = "{0}" }; \
-    if (!AYX_TRACE_UNIQ(ayx_trace_, __LINE__).channel_disable) \
-      ayxia_tc_trace_varargs(&AYX_TRACE_UNIQ(ayx_trace_, __LINE__), f, __VA_ARGS__); \
+    if (!channel$.channel_disable) \
+      ayxia_tc_trace_varargs(&channel$, f, __VA_ARGS__); \
 }
 
 #endif // __cplusplus

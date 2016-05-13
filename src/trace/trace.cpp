@@ -11,6 +11,8 @@ namespace
   std::mutex s_mutex;
 }
 
+TRACE_CLIENT_EXPORT int ayxia_tc_enable = 1;
+
 TRACE_CLIENT_EXPORT void ayxia_tc_initialize(const ayxia_trace_initialize* init)
 {
   std::unique_lock<std::mutex> lk(s_mutex);
