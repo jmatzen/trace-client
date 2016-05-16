@@ -31,6 +31,15 @@ int main()
     TRACE_WARNING("warning", "this is a test {0} {1} {2,16:4} {3:4} {4} 0x{0:x}", i, "test", float(i), double(i));
     TRACE_ERROR("error", "this is a test {0} {1} {2,16:4} {3:4} {4} 0x{0:x}", i, "test", float(i), double(i));
   }
+
+  for (;;)
+  {
+    ayxia_tc_start_frame();
+    TRACE_INFO("info", "this is a test");
+    TRACE_WARNING("warning", "this is a test");
+    TRACE_ERROR("error", "this is a test {0}");
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
   ayxia_tc_shutdown();
 }
 
