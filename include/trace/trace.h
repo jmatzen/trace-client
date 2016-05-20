@@ -153,7 +153,6 @@ namespace ayxia
     AYX_ARGTYPE(float, att_float32);
     AYX_ARGTYPE(double, att_float64);
     AYX_ARGTYPE(const char*, att_string);
-    AYX_ARGTYPE(char*, att_string);
     AYX_ARGTYPE(const wchar_t*, att_wstring);
     template<typename T, int N>
     struct argtype<T[N]> {
@@ -197,7 +196,7 @@ namespace ayxia
       }
 
       template<typename T>
-      ayxia_trace_arg mkarg(const T* str) const {
+      ayxia_trace_arg mkarg(T* str) const {
         ayxia_trace_arg res;
         res.parg = str;
         res.type = argtype<const T*>::value;
@@ -254,17 +253,13 @@ namespace ayxia
 }
 
 
-#define TRACE_INFO(channel, format, ...)  if (ayxia_tc_enable) { \
-  static ayxia::trace::Trace channel$(atl_info, channel, __FILE__, __FUNCTION__, __LINE__, format); \
+#define TRACE_LINE_(level, channel, format, ...)  if (ayxia_tc_enable) { \
+  static ayxia::trace::Trace channel$(level, channel, __FILE__, __FUNCTION__, __LINE__, format); \
   channel$(__VA_ARGS__); }
 
-#define TRACE_ERROR(channel, format, ...)  if (ayxia_tc_enable) { \
-  static ayxia::trace::Trace channel$(atl_error, channel, __FILE__, __FUNCTION__, __LINE__, format); \
-  channel$(__VA_ARGS__); }
-
-#define TRACE_WARNING(channel, format, ...)  if (ayxia_tc_enable) { \
-  static ayxia::trace::Trace channel$(atl_warning, channel, __FILE__, __FUNCTION__, __LINE__, format); \
-  channel$(__VA_ARGS__); }
+#define TRACE_INFO(format,...) TRACE_LINE_(atl_info, __FUNCTION__, format, __VA_ARGS__)
+#define TRACE_ERROR(format,...) TRACE_LINE_(atl_error, __FUNCTION__, format, __VA_ARGS__)
+#define TRACE_WARNING(format,...) TRACE_LINE_(atl_warning, __FUNCTION__, format, __VA_ARGS__)
 
 #else
 
