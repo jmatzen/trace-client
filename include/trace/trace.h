@@ -187,7 +187,7 @@ namespace ayxia
       }
 
       template<typename T>
-      ayxia_trace_arg mkarg(const T& arg) const
+      static ayxia_trace_arg mkarg(const T& arg) 
       {
         ayxia_trace_arg res;
         res.parg = &arg;
@@ -196,7 +196,7 @@ namespace ayxia
       }
 
       template<typename T>
-      ayxia_trace_arg mkarg(T* str) const {
+      static ayxia_trace_arg mkarg(T* str)  {
         ayxia_trace_arg res;
         res.parg = str;
         res.type = argtype<const T*>::value;
@@ -257,9 +257,9 @@ namespace ayxia
   static ayxia::trace::Trace channel$(level, channel, __FILE__, __FUNCTION__, __LINE__, format); \
   channel$(__VA_ARGS__); }
 
-#define TRACE_INFO(format,...) TRACE_LINE_(atl_info, __FUNCTION__, format, __VA_ARGS__)
-#define TRACE_ERROR(format,...) TRACE_LINE_(atl_error, __FUNCTION__, format, __VA_ARGS__)
-#define TRACE_WARNING(format,...) TRACE_LINE_(atl_warning, __FUNCTION__, format, __VA_ARGS__)
+#define TRACE_INFO(channel,format,...) TRACE_LINE_(atl_info, __FUNCTION__ ## "." ## channel, format, __VA_ARGS__)
+#define TRACE_ERROR(channel,format,...) TRACE_LINE_(atl_error, __FUNCTION__ ## "." ## channel, format, __VA_ARGS__)
+#define TRACE_WARNING(channel,format,...) TRACE_LINE_(atl_warning, __FUNCTION__ ## "." ## channel, format, __VA_ARGS__)
 
 #else
 

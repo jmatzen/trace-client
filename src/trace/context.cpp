@@ -138,6 +138,10 @@ void ayxia::trace::Context::InitChannel(ayxia_trace_channel& channel)
   if (delim)
     channel.file = ++delim;
 
+  std::string chname = channel.channel;
+  // fix up the channel name;
+  while (!chname.empty() && chname.back() == '.') chname.pop_back();
+
   std::array<char, 4096> buf;
   auto p = buf.data();
   if (channel.cookie)
@@ -146,7 +150,7 @@ void ayxia::trace::Context::InitChannel(ayxia_trace_channel& channel)
     p = write_buffer(p, uint64_t(&channel));
   p = write_buffer(p, uint8_t(channel.level));
   p = write_buffer(p, uint16_t(channel.lineno));
-  p = write_buffer(p, channel.channel);
+  p = write_buffer(p, chname.c_str());
   p = write_buffer(p, channel.file);
   p = write_buffer(p, channel.func);
   p = write_buffer(p, channel.format);
