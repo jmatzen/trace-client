@@ -27,7 +27,9 @@ int main()
   for (int i = 0; i < 100; ++i)
   {
     ayxia_tc_start_frame();
-    TRACE_INFO("info", "this is a test {0} {1} {2,16:4} {3:4} {4} 0x{0:x}", i, "test", float(i), double(i));
+    const char* str = "teest";
+    const wchar_t* str2 = L"wteest";
+    TRACE_INFO("info", "this is a test {0} {1}", str, str2);
     TRACE_WARNING("warning", "this is a test {0} {1} {2,16:4} {3:4} {4} 0x{0:x}", i, "test", float(i), double(i));
     TRACE_ERROR("error", "this is a test {0} {1} {2,16:4} {3:4} {4} 0x{0:x}", i, "test", float(i), double(i));
   }

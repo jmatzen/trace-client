@@ -184,14 +184,20 @@ namespace ayxia
         ayxia_tc_init_channel(&_channel);
       }
 
-
-
       template<typename T>
       ayxia_trace_arg mkarg(const T& arg) const
       {
         ayxia_trace_arg res;
         res.parg = &arg;
         res.type = argtype<T>::value;
+        return res;
+      }
+
+      template<typename T>
+      ayxia_trace_arg mkarg(const T* str) const {
+        ayxia_trace_arg res;
+        res.parg = str;
+        res.type = argtype<const T*>::value;
         return res;
       }
 
