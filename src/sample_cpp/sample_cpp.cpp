@@ -55,7 +55,8 @@ int main()
     ayxia_tc_start_frame();
     const char* str = "teest";
     const wchar_t* str2 = L"wteest";
-    TRACE_INFO("a", "this is a test {0} {1}", str, str2);
+    TRACE_INFO("a", "this is a test {0} {1}", true, false);
+    TRACE_INFO("xx", "this is a test {0} {1}", str,str2);
     TRACE_WARNING("b", "this is a test {0} {1} {2,16:4} {3:4} {4} 0x{0:x}", i, "test", float(i), double(i));
     TRACE_ERROR("c", "this is a test {0} {1} {2,16:4} {3:4} {4} 0x{0:x}", i, "test", float(i), double(i));
   }

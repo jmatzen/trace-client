@@ -148,6 +148,7 @@ namespace ayxia
     AYX_ARGTYPE(uint16_t, att_uint16);
     AYX_ARGTYPE(int32_t, att_int32);
     AYX_ARGTYPE(uint32_t, att_uint32);
+    AYX_ARGTYPE(bool, att_int32);
     AYX_ARGTYPE(int64_t, att_int64);
     AYX_ARGTYPE(uint64_t, att_uint64);
     AYX_ARGTYPE(float, att_float32);
