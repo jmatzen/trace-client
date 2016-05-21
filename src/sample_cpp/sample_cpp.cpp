@@ -23,19 +23,24 @@ class TraceTest
 public:
   static void info()
   {
-    TRACE_INFO("", "this is a test {0} {1}", "info", rand());
-
+    TRACE_INFO("StreamReader::Read", "Reading {0} bytes.", rand());
+    if (rand() % 2)
+      return;
+    TRACE_INFO("StreamReader::Read::Process", "Processed {0} bytes.", rand());
   }
 
   static void warning()
   {
-    TRACE_WARNING("", "this is a test {0} {1}", "warning", rand());
-
+    if (rand() % 10)
+      return;
+    TRACE_WARNING("StreamReader::Read::failed", "Checksum failed.");
   }
 
   static void error()
   {
-    TRACE_ERROR("", "this is a test {0} {1}", "error", rand());
+    if (rand() % 15)
+      return;
+    TRACE_ERROR("StreamReader::Write", "failed to write {0} bytes.", rand());
 
   }
 };
