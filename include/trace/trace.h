@@ -37,6 +37,7 @@ extern "C" {
     att_float64,
     att_string,
     att_wstring,
+    att_pointer = 0x80,
   };
 
   enum ayxia_trace_command
@@ -205,7 +206,8 @@ namespace ayxia
       static ayxia_trace_arg mkarg(T* ptr)  {
         ayxia_trace_arg res;
         res.parg = ptr;
-        res.type = argtype<intptr_t>::value;
+        res.type = static_cast<ayxia_trace_type>(
+          argtype<uint64_t>::value | att_pointer);
         return res;
       }
 
