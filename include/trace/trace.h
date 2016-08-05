@@ -37,6 +37,7 @@ extern "C" {
     att_float64,
     att_string,
     att_wstring,
+    att_pointer = 0x80,
   };
 
   enum ayxia_trace_command
@@ -149,6 +150,8 @@ namespace ayxia
     AYX_ARGTYPE(int32_t, att_int32);
     AYX_ARGTYPE(uint32_t, att_uint32);
     AYX_ARGTYPE(bool, att_int32);
+    AYX_ARGTYPE(long, att_int32);
+    AYX_ARGTYPE(unsigned long, att_uint32);
     AYX_ARGTYPE(int64_t, att_int64);
     AYX_ARGTYPE(uint64_t, att_uint64);
     AYX_ARGTYPE(float, att_float32);
@@ -197,10 +200,26 @@ namespace ayxia
       }
 
       template<typename T>
-      static ayxia_trace_arg mkarg(T* str)  {
+      static ayxia_trace_arg mkarg(T* ptr)  {
         ayxia_trace_arg res;
-        res.parg = str;
-        res.type = argtype<const T*>::value;
+        res.parg = ptr;
+        res.type = static_cast<ayxia_trace_type>(
+          argtype<uint64_t>::value | att_pointer);
+        return res;
+      }
+
+      static ayxia_trace_arg mkarg(const char* ptr) {
+        ayxia_trace_arg res;
+        res.parg = ptr;
+        res.type = argtype<const char * >::value;
+        return res;
+      }
+
+      static ayxia_trace_arg mkarg(bool arg)
+      {
+        ayxia_trace_arg res;
+        res.parg = arg ? "true" : "false";
+        res.type = argtype<bool>::value;
         return res;
       }
 
@@ -258,9 +277,9 @@ namespace ayxia
   static ayxia::trace::Trace channel$(level, channel, __FILE__, __FUNCTION__, __LINE__, format); \
   channel$(__VA_ARGS__); }
 
-#define TRACE_INFO(channel,format,...) TRACE_LINE_(atl_info, __FUNCTION__ ## "." ## channel, format, __VA_ARGS__)
-#define TRACE_ERROR(channel,format,...) TRACE_LINE_(atl_error, __FUNCTION__ ## "." ## channel, format, __VA_ARGS__)
-#define TRACE_WARNING(channel,format,...) TRACE_LINE_(atl_warning, __FUNCTION__ ## "." ## channel, format, __VA_ARGS__)
+#define TRACE_INFO(channel,format,...) TRACE_LINE_(atl_info, "root" ## "." ## channel, format, __VA_ARGS__)
+#define TRACE_ERROR(channel,format,...) TRACE_LINE_(atl_error, "root" ## "." ## channel, format, __VA_ARGS__)
+#define TRACE_WARNING(channel,format,...) TRACE_LINE_(atl_warning, "root" ## "." ## channel, format, __VA_ARGS__)
 
 #else
 

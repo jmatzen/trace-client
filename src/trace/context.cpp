@@ -57,9 +57,15 @@ namespace
   void serialize_arg(char*& p, const ayxia_trace_arg& arg) 
   {
     p = write_buffer(p, int8_t(arg.type));
-    T value;
-    memcpy(&value, arg.parg, sizeof(T));
-    p = write_buffer<T>(p, value);
+    if (arg.type & att_pointer) {
+      uint64_t value = reinterpret_cast<intptr_t>(arg.parg);
+      p = write_buffer<uint64_t>(p, value);
+    }
+    else {
+      T value;
+      memcpy(&value, arg.parg, sizeof(T));
+      p = write_buffer<T>(p, value);
+    }
   }
 
 
@@ -105,17 +111,17 @@ void ayxia::trace::Context::SendTrace(const ayxia_trace_channel& channel, const 
   ptr = write_buffer(ptr, uint8_t(nargs));
 
   for (auto it = args; it != args + nargs; ++it) {
-    switch (it->type) {
-    case att_int8: serialize_arg<int8_t>(ptr, *it); break;
+    switch (it->type & ~att_pointer) {
     case att_uint8: serialize_arg<uint8_t>(ptr, *it); break;
-    case att_uint16:serialize_arg<uint8_t>(ptr, *it); break;
+    case att_int8: serialize_arg<int8_t>(ptr, *it); break;
+    case att_uint16:serialize_arg<uint16_t>(ptr, *it); break;
     case att_int16:serialize_arg<int16_t>(ptr, *it); break;
     case att_uint32:serialize_arg<uint32_t>(ptr, *it); break;
-    case att_float32:serialize_arg<float>(ptr, *it); break;
     case att_int32:serialize_arg<int32_t>(ptr, *it); break;
     case att_uint64:serialize_arg<uint64_t>(ptr, *it); break;
-    case att_float64:serialize_arg<double>(ptr, *it); break;
     case att_int64:serialize_arg<int64_t>(ptr, *it); break;
+    case att_float32:serialize_arg<float>(ptr, *it); break;
+    case att_float64:serialize_arg<double>(ptr, *it); break;
     case att_string:serialize_arg_string<char>(ptr, *it); break;
     case att_wstring:serialize_arg_string<wchar_t>(ptr, *it); break;
     default: abort();
