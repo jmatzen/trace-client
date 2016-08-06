@@ -22,6 +22,7 @@
 namespace
 {
   const size_t kBufferSize = 65536;
+  const char * const kStreamHeaderMagicValue = "TRCE";
 
 #if defined _WIN32
   thread_local int32_t s_threadid = -1;
@@ -51,7 +52,10 @@ namespace
     return p + len*sizeof(wchar_t);
   }
 
-
+  char* write_buffer(char* p, bool arg) {
+    p = write_buffer(p, static_cast<int8_t>(arg ? 1 : 0));
+    return p += sizeof(int8_t);
+  }
 
   template<typename T>
   void serialize_arg(char*& p, const ayxia_trace_arg& arg) 
@@ -122,6 +126,7 @@ void ayxia::trace::Context::SendTrace(const ayxia_trace_channel& channel, const 
     case att_int64:serialize_arg<int64_t>(ptr, *it); break;
     case att_float32:serialize_arg<float>(ptr, *it); break;
     case att_float64:serialize_arg<double>(ptr, *it); break;
+    case att_boolean:serialize_arg<bool>(ptr, *it); break;
     case att_string:serialize_arg_string<char>(ptr, *it); break;
     case att_wstring:serialize_arg_string<wchar_t>(ptr, *it); break;
     default: abort();
@@ -173,6 +178,10 @@ void ayxia::trace::Context::Initialize()
   }
   std::array<char, 1024> buf;
   auto p = buf.data();
+  unsigned magic;
+  memcpy(&magic, kStreamHeaderMagicValue, 4);
+  p = write_buffer<unsigned>(p, magic);
+  p = write_buffer<short>(p, 0x0100); // stream version
   p = write_buffer(p, m_processName.c_str());
   SendToLogger(atc_initialize, buf.data(), p - buf.data());
 }

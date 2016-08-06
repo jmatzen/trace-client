@@ -37,6 +37,7 @@ extern "C" {
     att_float64,
     att_string,
     att_wstring,
+    att_boolean,
     att_pointer = 0x80,
   };
 
@@ -149,7 +150,7 @@ namespace ayxia
     AYX_ARGTYPE(uint16_t, att_uint16);
     AYX_ARGTYPE(int32_t, att_int32);
     AYX_ARGTYPE(uint32_t, att_uint32);
-    AYX_ARGTYPE(bool, att_int32);
+    AYX_ARGTYPE(bool, att_boolean);
     AYX_ARGTYPE(long, att_int32);
     AYX_ARGTYPE(unsigned long, att_uint32);
     AYX_ARGTYPE(int64_t, att_int64);
@@ -215,13 +216,13 @@ namespace ayxia
         return res;
       }
 
-      static ayxia_trace_arg mkarg(bool arg)
-      {
-        ayxia_trace_arg res;
-        res.parg = arg ? "true" : "false";
-        res.type = argtype<bool>::value;
-        return res;
-      }
+      //static ayxia_trace_arg mkarg(bool arg)
+      //{
+      //  ayxia_trace_arg res;
+      //  res.parg = &arg;
+      //  res.type = argtype<bool>::value;
+      //  return res;
+      //}
 
       void operator()() 
       {

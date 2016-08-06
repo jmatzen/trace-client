@@ -33,14 +33,14 @@ public:
   {
     if (rand() % 10)
       return;
-    TRACE_WARNING("StreamReader::Read::failed", "Checksum failed.");
+    TRACE_WARNING("StreamReader::Read::failed", "Checksum failed address={0}", (void*)intptr_t(0xdeadbeef));
   }
 
   static void error()
   {
     if (rand() % 15)
       return;
-    TRACE_ERROR("StreamReader::Write", "failed to write {0} bytes.", rand());
+    TRACE_ERROR("StreamReader::Write", "failed to write {0} bytes. {1}", rand(), rand()?true:false);
 
   }
 };
@@ -50,6 +50,7 @@ int main()
   auto init = TraceInitialize("localhost", "sample_cpp", 1024 * 1024);
   ayxia_tc_initialize(&init);
   
+  TRACE_INFO("boolcheck", "{0} {1}", true, false);
   for (int i = 0; i < 100; ++i)
   {
     ayxia_tc_start_frame();
