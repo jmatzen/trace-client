@@ -216,14 +216,6 @@ namespace ayxia
         return res;
       }
 
-      //static ayxia_trace_arg mkarg(bool arg)
-      //{
-      //  ayxia_trace_arg res;
-      //  res.parg = &arg;
-      //  res.type = argtype<bool>::value;
-      //  return res;
-      //}
-
       void operator()() 
       {
         if (_channel.channel_disable) return;
