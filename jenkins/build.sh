@@ -29,7 +29,7 @@ build x86
 build x86_64
 
 mkdir -p ../dist/include
-cp -r ../include/ ../dist/include
+cp -r ../include/* ../dist/include
 
 cd ../dist
 zip -r ../ayxia-client-sdk-`git describe --abbrev=0 --tags`.zip *
