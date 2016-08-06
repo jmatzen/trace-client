@@ -1,1 +1,1 @@
-# A client library for communicating with Ayxia Logger
+# A client library for communicating with Ayxia Trace
