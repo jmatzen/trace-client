@@ -23,6 +23,7 @@ namespace
 {
   const size_t kBufferSize = 65536;
   const char * const kStreamHeaderMagicValue = "TRCE";
+  const short kStreamVersion = 0x0100;
 
 #if defined _WIN32
   thread_local int32_t s_threadid = -1;
@@ -181,7 +182,7 @@ void ayxia::trace::Context::Initialize()
   unsigned magic;
   memcpy(&magic, kStreamHeaderMagicValue, 4);
   p = write_buffer<unsigned>(p, magic);
-  p = write_buffer<short>(p, 0x0100); // stream version
+  p = write_buffer<short>(p, kStreamVersion); // stream version
   p = write_buffer(p, m_processName.c_str());
   SendToLogger(atc_initialize, buf.data(), p - buf.data());
 }
