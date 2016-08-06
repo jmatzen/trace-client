@@ -270,9 +270,9 @@ namespace ayxia
   static ayxia::trace::Trace channel$(level, channel, __FILE__, __FUNCTION__, __LINE__, format); \
   channel$(__VA_ARGS__); }
 
-#define TRACE_INFO(channel,format,...) TRACE_LINE_(atl_info, "root" ## "." ## channel, format, __VA_ARGS__)
-#define TRACE_ERROR(channel,format,...) TRACE_LINE_(atl_error, "root" ## "." ## channel, format, __VA_ARGS__)
-#define TRACE_WARNING(channel,format,...) TRACE_LINE_(atl_warning, "root" ## "." ## channel, format, __VA_ARGS__)
+#define TRACE_INFO(channel,format,...) TRACE_LINE_(atl_info, channel, format, __VA_ARGS__)
+#define TRACE_ERROR(channel,format,...) TRACE_LINE_(atl_error, channel, format, __VA_ARGS__)
+#define TRACE_WARNING(channel,format,...) TRACE_LINE_(atl_warning, channel, format, __VA_ARGS__)
 
 #else
 
