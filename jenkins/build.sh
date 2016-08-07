@@ -30,9 +30,8 @@ build () {
 build x86
 build x86_64
 
-
 mkdir -p dist/include
 cp -r include/* dist/include
 
 cd dist
-zip -r ../ayxia-sdk-win32-`git describe --abbrev=0 --tags`.zip *
+zip -r ../ayxiatrace-sdk-windows-`git describe --abbrev=0 --tags`.zip *
