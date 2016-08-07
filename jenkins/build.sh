@@ -24,6 +24,7 @@ build () {
 		mkdir -p ../dist/lib/$1
 		cp bin/Release/ayxiatrace.lib ../dist/lib/$1
 		cp bin/Release/libuv.lib ../dist/lib/$1
+	)
 }
 
 build x86
@@ -34,4 +35,4 @@ mkdir -p dist/include
 cp -r include/* dist/include
 
 cd dist
-zip -r ../ayxia-client-sdk-`git describe --abbrev=0 --tags`.zip *
+zip -r ../ayxia-sdk-win32-`git describe --abbrev=0 --tags`.zip *
