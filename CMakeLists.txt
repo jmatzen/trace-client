@@ -25,6 +25,7 @@ add_subdirectory(src/sample_c)
 add_subdirectory(src/sample_cpp)
 #add_subdirectory(src/tests)
 add_subdirectory(submodules/unittest-cpp)
+add_subdirectory(src/java)
 
 if (WIN32)
   string(REPLACE "/W3" "/W0" CMAKE_C_FLAGS ${CMAKE_C_FLAGS})
