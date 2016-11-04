@@ -3,6 +3,7 @@
 #include <jni.h>
 #include <exception>
 #include <string>
+#include <iostream>
 
 class JEnv;
 
@@ -50,9 +51,25 @@ private:
 };
 
 
+extern "C" {
+}
 
-JNIEXPORT void JNICALL jni_tc_initialize(JNIEnv* e, jobject const initializer) {
+extern "C" {
+  JNIEXPORT void JNICALL Java_com_ayxia_trace_Main_jni_1test(JNIEnv* e);
+  JNIEXPORT void JNICALL Java_com_ayxia_trace_Main_jni_1tc_1initialize(JNIEnv* e, jobject const initializer);
+}
+
+void JNICALL Java_com_ayxia_trace_Main_jni_1test(JNIEnv* e) {
+  std::cout << "hello, world" << std::endl;
+}
+
+void JNICALL Java_com_ayxia_trace_Main_jni_1tc_1initialize(JNIEnv* e, jobject const initializer) {
+  std::cerr << "hello, world" << std::endl;
   JEnv env(*e);
+  jclass klass = e->GetObjectClass(initializer);
+
+  
+
   auto initClass = env.getObjectClass(initializer);
   auto remote_host = initClass->get<std::string>("remoteHost");
 
