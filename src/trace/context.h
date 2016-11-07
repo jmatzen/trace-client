@@ -23,6 +23,10 @@ namespace ayxia
 
       void SendTrace(const ayxia_trace_channel& channel, const ayxia_trace_arg* args, size_t nargs);
 
+      void SendTrace(const ayxia_trace_channel& channel, const char* message);
+
+      void SendTrace(ayxia_trace_level level, const char* channelName, const char* message);
+
       void InitChannel(ayxia_trace_channel& channel);
 
       void Initialize();
@@ -31,10 +35,6 @@ namespace ayxia
 
       void SetThreadName(const char* name);
 
-      void SendTrace(
-        ayxia_trace_level level, 
-        const char* channelName, 
-        const char* message);
 
     private:
 

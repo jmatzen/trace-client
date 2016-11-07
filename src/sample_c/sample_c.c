@@ -21,7 +21,7 @@ int main()
     }
     else
     {
-      ayxia_tc_simple_trace(rand() % 3, "x.y.z", "this is a message");
+      ayxia_tc_simple_trace(rand() % 3, "x.y.z", "this is a message", "", 0);
     }
   }
   ayxia_tc_shutdown();

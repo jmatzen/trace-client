@@ -1,7 +1,12 @@
 file(GLOB files *.c *.h ../../include/trace/*.h)
 
 add_library(trace-java SHARED ${files})
-include_directories (C:/java/jdk1.8.0_92/include C:/java/jdk1.8.0_92/include/win32)
+include_directories (
+  C:/java/jdk1.8.0_92/include 
+  C:/java/jdk1.8.0_92/include/win32
+  C:/java/jdk1.8.0_45/include 
+  C:/java/jdk1.8.0_45/include/win32
+  )
 add_definitions(/std:c++latest)
 
 if (WIN32)

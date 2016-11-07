@@ -34,14 +34,17 @@ JNIEXPORT void JNICALL Java_com_ayxia_trace_JNITrace_simpleTrace(
   jobject thisobj,
   jint level,
   jstring channel,
-  jstring text
+  jstring text,
+  jstring filename,
+  jint lineno
 ) {
   const char * strChannel = (*env)->GetStringUTFChars(env, channel, 0);
   const char * strText = (*env)->GetStringUTFChars(env, text, 0);
-  if (!strChannel || !strText) 
+  const char * strFileName = (*env)->GetStringUTFChars(env, filename, 0);
+  if (!strChannel || !strText || !strFileName) 
     throwNullPointerException(env);
   else
-    ayxia_tc_simple_trace(level, strChannel, strText);
+    ayxia_tc_simple_trace(level, strChannel, strText, strFileName, lineno);
 }
 
 JNIEXPORT void JNICALL Java_com_ayxia_trace_JNITrace_shutdown(JNIEnv* env) {

@@ -126,7 +126,9 @@ extern "C" {
   TRACE_CLIENT_EXPORT void ayxia_tc_simple_trace(
     enum ayxia_trace_level level, 
     const char* channel, 
-    const char* message);
+    const char* message,
+    const char* file,
+    int lineno);
 
   TRACE_CLIENT_EXPORT void ayxia_tc_enter_context(const ayxia_trace_context* context);
 
