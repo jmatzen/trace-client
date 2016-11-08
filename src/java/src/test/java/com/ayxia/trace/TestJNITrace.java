@@ -1,5 +1,6 @@
 package com.ayxia.trace;
 
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,10 +12,6 @@ public class TestJNITrace {
 
 	Logger logger = LoggerFactory.getLogger(TestJNITrace.class);
 
-	{
-		new JNITrace();
-		JNITrace.initialize("localhost", "JNITrace", 0);
-	}
 
 	@Test
 	public void simpleTrace() {
@@ -30,6 +27,11 @@ public class TestJNITrace {
 			x();
 			Thread.sleep(10);
 		}
+	}
+
+	@AfterClass
+	public static void teardown() {
+		JNITrace.shutdown();
 	}
 
 	private void x() {

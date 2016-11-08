@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!--<appender name="STDOUT" class="com.ayxia.trace.AyxiaTraceAppender">-->
+        <!--<encoder>-->
+            <!--<pattern>[US] %date %level [%logger{4}.%method:%line][%t] - %message%n</pattern>-->
+        <!--</encoder>-->
+    <!--</appender>-->
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>[US] %date %level [%logger{4}.%method:%line][%t] - %message%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="AYXIATRACE" class="com.ayxia.trace.AyxiaTraceAppender"/>
+
+    <root level="INFO">
+        <if condition='isDefined("ayxia")'>
+            <then>
+                <appender-ref ref="AYXIATRACE"/>
+            </then>
+        </if>
+    </root>
+
+</configuration>

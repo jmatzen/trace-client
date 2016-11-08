@@ -5,7 +5,7 @@ package com.ayxia.trace;
  */
 public class JNITrace {
 	{
-		System.loadLibrary("../../build/bin/debug/trace-java");
+		System.loadLibrary("trace-java");
 	}
 
 	public static native void initialize(String remoteHost, String processName, int flags);
