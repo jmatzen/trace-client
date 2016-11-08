@@ -4,7 +4,7 @@ package com.ayxia.trace;
  * Created by jmatzen on 11/4/2016.
  */
 public class JNITrace {
-	{
+	public static void load() {
 		System.loadLibrary("trace-java");
 	}
 
