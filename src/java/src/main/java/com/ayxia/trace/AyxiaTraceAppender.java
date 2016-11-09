@@ -8,6 +8,8 @@ import ch.qos.logback.core.UnsynchronizedAppenderBase;
  * Created by jmatzen on 11/8/2016.
  */
 public class AyxiaTraceAppender<E extends LoggingEvent>  extends UnsynchronizedAppenderBase<E> {
+	static final int MAX_MESSAGE_LENGTH = 4096;
+
 	protected void append(E e) {
 		StackTraceElement caller = e.getCallerData()[0];
 		int level = JNITrace.Level_INFO;
@@ -18,7 +20,7 @@ public class AyxiaTraceAppender<E extends LoggingEvent>  extends UnsynchronizedA
 		JNITrace.simpleTrace(
 			level,
 			caller.getClassName() + "." + caller.getMethodName(),
-			e.getFormattedMessage(),
+			e.getFormattedMessage().substring(0, MAX_MESSAGE_LENGTH),
 			caller.getFileName(),
 			caller.getLineNumber()
 		);
