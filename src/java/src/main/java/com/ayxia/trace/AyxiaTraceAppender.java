@@ -17,10 +17,13 @@ public class AyxiaTraceAppender<E extends LoggingEvent>  extends UnsynchronizedA
 			case Level.ERROR_INT: level = JNITrace.Level_ERROR; break;
 			case Level.WARN_INT: level = JNITrace.Level_WARNING; break;
 		}
+		final String message = e.getFormattedMessage();
 		JNITrace.simpleTrace(
 			level,
 			caller.getClassName() + "." + caller.getMethodName(),
-			e.getFormattedMessage().substring(0, MAX_MESSAGE_LENGTH),
+			message.length() > MAX_MESSAGE_LENGTH
+				? message.substring(0, Math.min(MAX_MESSAGE_LENGTH, message.length()))
+				: message,
 			caller.getFileName(),
 			caller.getLineNumber()
 		);

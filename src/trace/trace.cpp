@@ -3,14 +3,14 @@
 #include <mutex>
 #include <cstdio>
 #include <utility>
-#include <unordered_map>
+#include <unordered_set>
 #include "context.h"
 
 namespace
 {
   std::unique_ptr<ayxia::trace::Context> s_context;
   std::mutex s_mutex;
-  std::unordered_map<size_t, std::unique_ptr<ayxia_trace_channel>> s_channelMap;
+  std::unordered_set<size_t> s_channelSet;
 }
 
 TRACE_CLIENT_EXPORT int ayxia_tc_enable = 1;
@@ -27,7 +27,7 @@ TRACE_CLIENT_EXPORT void ayxia_tc_initialize(const ayxia_trace_initialize* init)
 TRACE_CLIENT_EXPORT void ayxia_tc_shutdown()
 {
   std::unique_lock<std::mutex> lk(s_mutex);
-  s_channelMap.clear();
+  s_channelSet.clear();
   s_context.reset();
 }
 
@@ -86,24 +86,23 @@ TRACE_CLIENT_EXPORT void ayxia_tc_simple_trace(
     ^ std::hash<uint32_t>()(lineno)
     ^ std::hash<int>()((int)level);
 
-  std::unordered_map<size_t, std::unique_ptr<ayxia_trace_channel>>::iterator it;
+  ayxia_trace_channel node{
+    (uint32_t)level,
+    (uint32_t)lineno,
+    0,
+    static_cast<uint32_t>(hash),
+    channel,
+    filename,
+    "",
+    "{0}"
+  };
 
   {
     std::unique_lock<std::mutex> lk(s_mutex);
-    it = s_channelMap.find(hash);
-    if (it == s_channelMap.end()) {
-      auto node = std::make_unique<ayxia_trace_channel>(ayxia_trace_channel{
-        (uint32_t)level,
-        (uint32_t)lineno,
-        0,
-        0,
-        channel,
-        filename,
-        "",
-        "{0}"
-      });
-      ayxia_tc_init_channel(node.get());
-      it = s_channelMap.emplace(hash, std::move(node)).first;
+    if (s_channelSet.find(hash) == s_channelSet.end()) 
+    {
+      ayxia_tc_init_channel(&node);
+      s_channelSet.emplace(hash);
     }
   }
 
@@ -111,6 +110,6 @@ TRACE_CLIENT_EXPORT void ayxia_tc_simple_trace(
     message, att_string
   };
 
-  ayxia_tc_trace(it->second.get(), &arg, 1);
+  ayxia_tc_trace(&node, &arg, 1);
 }
 

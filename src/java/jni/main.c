@@ -20,8 +20,6 @@ JNIEXPORT void JNICALL Java_com_ayxia_trace_JNITrace_initialize(
   };
 
   if (init.remote_host == 0 || init.process_name == 0) {
-    fprintf(stderr, "throwing exception %llx %llx %s\n", 
-      (uint64_t)init.remote_host, (uint64_t)init.process_name, init.process_name);
     throwNullPointerException(env);
   }
   else {
@@ -41,7 +39,7 @@ JNIEXPORT void JNICALL Java_com_ayxia_trace_JNITrace_simpleTrace(
   const char * strChannel = (*env)->GetStringUTFChars(env, channel, 0);
   const char * strText = (*env)->GetStringUTFChars(env, text, 0);
   const char * strFileName = (*env)->GetStringUTFChars(env, filename, 0);
-  if (!strChannel || !strText || !strFileName) 
+  if (!strChannel || !strText || !strFileName)
     throwNullPointerException(env);
   else
     ayxia_tc_simple_trace(level, strChannel, strText, strFileName, lineno);
