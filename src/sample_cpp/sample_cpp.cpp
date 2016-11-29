@@ -49,7 +49,9 @@ int main()
 {
   auto init = TraceInitialize("localhost", "sample_cpp", 1024 * 1024);
   ayxia_tc_initialize(&init);
-  
+
+  TRACE_ERROR("c", "this a;slkjf ;alksjd ;lkasjd f;lakjs df;lkajs\ndf;lkajs df;lkajs df;lkja sdf;lkja sd;flkj as;dlfk a;sldk a;lskj ;alskj ;alksjf ;laksjf ;lakjs dflkajshd flkjahs dflkjha sdflkjha sdlfkjh alskdjh alksjd\nlakjsd lkajsh flkajhs dflkjha sdflkjha sdflkjh asdf is a test");
+
   TRACE_INFO("boolcheck", "{0} {1}", true, false);
   for (int i = 0; i < 100; ++i)
   {
@@ -59,7 +61,7 @@ int main()
     TRACE_INFO("a", "this is a test {0} {1}", true, false);
     TRACE_INFO("xx", "this is a test {0} {1}", str,str2);
     TRACE_WARNING("b", "this is a test {0} {1} {2,16:4} {3:4} {4} 0x{0:x}", i, "test", float(i), double(i));
-    TRACE_ERROR("c", "this is a test {0} {1} {2,16:4} {3:4} {4} 0x{0:x}", i, "test", float(i), double(i));
+    TRACE_ERROR("c", "this a;slkjf ;alksjd ;lkasjd f;lakjs df;lkajs df;lkajs df;lkajs df;lkja sdf;lkja sd;flkj as;dlfk a;sldk a;lskj ;alskj ;alksjf ;laksjf ;lakjs dflkajshd flkjahs dflkjha sdflkjha sdlfkjh alskdjh alksjd lakjsd lkajsh flkajhs dflkjha sdflkjha sdflkjh asdf is a test {0} {1} {2,16:4} {3:4} {4} 0x{0:x}", i, "test", float(i), double(i));
   }
 
   for (;;)
