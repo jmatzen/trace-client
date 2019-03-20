@@ -2,9 +2,9 @@
 
 ## Synopsis
 
-This is an implementation of the Ayxia Trace Client C/C++ API that provides encapsulation of the protocol used to send trace messages to the Ayxia Trace GUI.
+This implementation of the Ayxia Trace Client C/C++ API provides encapsulation of the protocol used to send trace messages to the Ayxia Trace GUI.
 
-The C++ API provides the best performance since it can take advantage of variadic templates to gather type information which can be used to perform text formatting in the viewer application instead of in the code being traced.  This can result in significant speedups.
+The C++ API provides the best performance by taking advantage of variadic templates to gather type information which can be used to to format text in the viewer application instead of in the code being traced.  This can result in significant speedups.
 
 ## Log Viewer
 
@@ -31,7 +31,7 @@ int main()
 
 ### C
 
-Using C isn't quite as easy because it uses printf format to format the string, so all of the caveats that come with printf also apply, for example using %s with an integer value will likely cause a fault, or trying to format a floating point value with %d will give you incorrect results.
+Using C isn't as easy. C uses printf to format the string, so all of the caveats that come with printf also apply, for example, using %s with an integer value will likely cause a fault or trying to format a floating point value with %d will give you incorrect results.
 
 ```C
 TRACE_INFO("some.channel", "this is a test %d", i);
