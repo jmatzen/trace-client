@@ -4,7 +4,7 @@
 
 This implementation of the Ayxia Trace Client C/C++ API provides encapsulation of the protocol used to send trace messages to the Ayxia Trace GUI.
 
-The C++ API provides the best performance by taking advantage of variadic templates to gather type information which can be used to to format text in the viewer application instead of in the code being traced.  This can result in significant speedups.
+The C++ API provides the best performance by taking advantage of variadic templates to gather type information which can be used to format text in the viewer application instead of in the code being traced.  This can result in significant speedups.
 
 ## Log Viewer
 
